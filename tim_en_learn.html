@@ -1,0 +1,3605 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tim 的單字拼拼樂 | Tim's Word Spelling</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    .cursor-grab {
+      cursor: grab;
+    }
+    .cursor-grab:active {
+      cursor: grabbing;
+    }
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-100 via-sky-100 to-indigo-100 min-h-screen lg:h-screen lg:max-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+  <!-- 灑花畫布 (純原生 Canvas，不依賴任何外部套件) -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- 頂部導覽列：角色切換與計星榜 -->
+  <header class="w-full max-w-5xl mx-auto px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+    <!-- 小朋友標示 (Tim 專屬) -->
+    <div class="flex items-center gap-2 bg-white/85 backdrop-blur-md px-4 py-1.5 rounded-full shadow-md border border-white/80">
+      <span class="text-xl">👦</span>
+      <span class="font-black text-sm sm:text-base text-blue-700">Tim 的冒險空間</span>
+    </div>
+
+    <!-- 星星獎勵與戰績按鈕 -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 bg-amber-400 text-amber-950 px-3.5 py-1.5 rounded-full font-black text-base sm:text-lg shadow-md">
+        <span>⭐</span>
+        <span id="user-stars">0</span>
+      </div>
+
+      <button id="open-stats-btn" title="查看成績與紀錄" class="flex items-center justify-center w-10 h-10 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-md border border-white transition-all hover:scale-105 active:scale-95 text-lg">
+        🏆
+      </button>
+    </div>
+  </header>
+
+  <!-- 單元選單分類列 (7 大單元篇幅) -->
+  <nav class="w-full max-w-5xl mx-auto px-2 py-1 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap flex-shrink-0" id="category-tabs">
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>🎒</span><span>一年級</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>✏️</span><span>二年級</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow-md scale-105 ring-2 ring-indigo-300"><span>🔤</span><span>三年級 Ready</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>👋</span><span>三年級 Unit 1</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>🔢</span><span>三年級 Unit 2</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>📚</span><span>三年級 Unit 3</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>🎨</span><span>三年級 Unit 4</span></button>
+    <button type="button" class="flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm bg-white/85 text-slate-600 shadow-sm border border-slate-200"><span>🚌</span><span>公車與捷運</span></button>
+  </nav>
+
+  <!-- 主遊戲畫面 (大幅放大中央卡片、圖片與文字排版，完美適配平板橫向大螢幕) -->
+  <main class="w-full max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-1.5 sm:py-2.5 flex-1 flex flex-col justify-center min-h-0">
+    
+    <!-- 題目主卡片 (橫向 16:9 雙欄自適應放大設計) -->
+    <div class="w-full bg-white/95 backdrop-blur-lg rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl border-4 border-white/90 relative flex flex-col md:flex-row items-center md:items-stretch gap-4 md:gap-7">
+      
+      <!-- 已過關徽章 -->
+      <div id="word-completed-badge" class="hidden absolute top-3 right-3 sm:top-4 sm:right-4 bg-emerald-500 text-white text-xs sm:text-sm font-black px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 z-10">
+        <span>🎉</span> 已經學會囉！
+      </div>
+
+      <!-- 左側：圖片與單字發音區 (放大圖片與字體) -->
+      <div class="w-full md:w-5/12 lg:w-4/12 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-2xl bg-amber-50/75 border border-amber-200/80">
+        <!-- 圖片容器 (從原本 44 放大到 48/56，平板上一目了然) -->
+        <div class="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl p-2 shadow-inner border-2 border-amber-200 flex items-center justify-center overflow-hidden animate-float mb-2">
+          <div id="word-image" class="w-full h-full flex items-center justify-center filter drop-shadow">
+            <img src="images/cap.jpg" alt="鴨舌帽" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80'" class="w-full h-full object-cover rounded-2xl shadow-sm" />
+          </div>
+        </div>
+
+        <!-- 單字資訊與發音按鈕 -->
+        <div class="flex flex-col items-center w-full">
+          <div class="flex items-baseline justify-center gap-2.5 mb-1 flex-wrap">
+            <h2 id="word-translation" class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 tracking-wide">鴨舌帽</h2>
+            <span id="word-phonics" class="text-sm sm:text-base font-medium text-slate-400">/kæp/</span>
+          </div>
+          <p id="word-hint" class="text-slate-600 text-xs sm:text-sm lg:text-base mb-2 font-medium line-clamp-1">戴在頭上遮陽的帽子</p>
+
+          <!-- 語音朗讀按鈕群 -->
+          <div class="flex items-center gap-2.5">
+            <button id="speak-btn" class="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl shadow-md transition-all text-xs sm:text-sm lg:text-base">
+              <span class="text-base sm:text-lg">🔊</span>
+              <span>聽發音</span>
+            </button>
+            <button id="speak-slow-btn" class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:scale-95 text-amber-950 font-extrabold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl shadow-md transition-all text-xs sm:text-sm lg:text-base" title="慢速朗讀">
+              <span class="text-base sm:text-lg">🐢</span>
+              <span>慢速</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：拼字空格 + 字母池 (加大尺寸) -->
+      <div class="w-full md:w-7/12 lg:w-8/12 flex flex-col justify-between">
+        
+        <!-- 操作小提醒 -->
+        <div class="text-xs sm:text-sm text-slate-600 bg-sky-50 px-3.5 py-1.5 rounded-full mb-2 border border-sky-100 flex items-center justify-center gap-1.5 font-medium shadow-xs">
+          <span>💡</span> 拖拉字母到空格，或「點擊字母」自動排入喔！
+        </div>
+
+        <!-- 拼字空格放置區 (Slots) -->
+        <div id="slots-container" class="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 my-auto py-2 sm:py-3 min-h-[4.5rem] sm:min-h-[5rem]">
+          <div class="w-13 h-16 sm:w-15 sm:h-18 md:w-16 md:h-20 lg:w-20 lg:h-24 rounded-2xl flex items-center justify-center font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl shadow-inner transition-all duration-200 cursor-pointer select-none bg-white/85 border-3 sm:border-4 border-dashed border-sky-300 text-transparent hover:border-sky-400"><span class="text-sky-200 text-base sm:text-lg md:text-xl font-bold">1</span></div>
+        </div>
+
+        <!-- 亂序字母池 (Letters Pool) -->
+        <div class="w-full bg-slate-100/90 rounded-2xl p-3 sm:p-3.5 border-2 border-slate-200 mt-2">
+          <div class="flex items-center justify-between mb-1.5 px-1">
+            <span class="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-wider">亂序字母庫 (點擊或拖曳)</span>
+            <div class="flex items-center gap-2">
+              <button id="hint-btn" class="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-xs">
+                <span>💡</span> 提示我
+              </button>
+              <button id="reset-letters-btn" class="text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-700 bg-white px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 transition-colors flex items-center gap-1">
+                <span>🔄</span> 重排
+              </button>
+            </div>
+          </div>
+
+          <div id="letters-pool" class="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 min-h-[4rem] sm:min-h-[4.5rem]">
+            <!-- 動態生成亂序字母卡 -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 底部切換單字列 -->
+    <div class="flex items-center justify-between w-full max-w-xl mx-auto mt-2.5 sm:mt-3 px-2 gap-3 flex-shrink-0">
+      <button id="prev-word-btn" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl shadow border border-white transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        <span>⬅️</span> 上一題
+      </button>
+
+      <!-- 隨機洗牌出題按鈕 -->
+      <button id="shuffle-words-btn" type="button" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black px-4 sm:px-5 py-2 rounded-xl sm:rounded-2xl shadow-md transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        <span>🔀</span><span>隨機出題</span>
+      </button>
+
+      <div id="word-counter" class="text-slate-700 font-black text-xs sm:text-sm lg:text-base bg-white/90 px-3.5 py-1.5 rounded-full shadow-inner border border-slate-200">
+        1 / 15
+      </div>
+
+      <button id="next-word-btn" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl shadow border border-white transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        下一題 <span>➡️</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- 回饋浮層卡片 (成功讚美 / 失敗溫和打氣) -->
+  <div id="feedback-card" class="hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center transform">
+      <div id="feedback-emoji" class="text-4xl sm:text-5xl mb-2">🎉 🌟 👏</div>
+      <h3 id="feedback-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">太棒了，Tim！答對了！</h3>
+      <p id="feedback-subtitle" class="text-indigo-600 font-bold text-sm sm:text-base mb-3">Awesome job! You are a superstar!</p>
+      
+      <!-- 答對時的單字強化複習區 (包含圖片、正確拼字、中文與三大發音按鈕) -->
+      <div id="feedback-word-box" class="hidden my-4 p-3.5 sm:p-4 bg-amber-50/95 rounded-2xl border-2 border-amber-200 text-left">
+        <div class="flex items-center gap-3.5 mb-3">
+          <!-- 單字圖片 -->
+          <div id="feedback-word-img" class="w-18 h-18 sm:w-20 sm:h-20 bg-white rounded-2xl p-1.5 shadow-sm border border-amber-200 flex items-center justify-center flex-shrink-0">
+            <!-- 注入 SVG -->
+          </div>
+          <div class="flex-1 min-w-0">
+            <!-- 正確拼字方塊 [c] [a] [p] -->
+            <div id="feedback-spelling-tiles" class="flex flex-wrap gap-1.5 mb-1.5">
+              <!-- 動態生成字母方塊 -->
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="feedback-word-text" class="text-2xl sm:text-3xl font-black text-indigo-700 tracking-wider">cap</span>
+              <span id="feedback-word-translation" class="text-lg sm:text-xl font-bold text-slate-700">鴨舌帽</span>
+            </div>
+            <div id="feedback-word-phonics" class="text-xs text-slate-400 font-medium">/kæp/</div>
+          </div>
+        </div>
+
+        <!-- 3 個發音按鈕：拼字發音、英文發音、中文發音 -->
+        <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-amber-200">
+          <button id="feedback-btn-spell" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-indigo-700 font-extrabold text-xs py-2 px-1 rounded-xl shadow-sm border border-indigo-200 active:scale-95 transition-all">
+            <span>🔤</span><span>拼字發音</span>
+          </button>
+          <button id="feedback-btn-en" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-blue-700 font-extrabold text-xs py-2 px-1 rounded-xl shadow-sm border border-blue-200 active:scale-95 transition-all">
+            <span>🔊</span><span>英文發音</span>
+          </button>
+          <button id="feedback-btn-zh" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-emerald-700 font-extrabold text-xs py-2 px-1 rounded-xl shadow-sm border border-emerald-200 active:scale-95 transition-all">
+            <span>🗣️</span><span>中文發音</span>
+          </button>
+        </div>
+      </div>
+
+      <button id="feedback-action-btn" class="w-full py-3.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xl rounded-2xl shadow-lg transition-transform active:scale-95">
+        挑戰下一個單字 ➡️
+      </button>
+    </div>
+  </div>
+
+  <!-- 成績與學習紀錄彈窗 (Tim & Bella) -->
+  <div id="stats-modal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border-2 border-slate-100 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <span>🏆</span> 學習戰報與成就
+        </h3>
+        <button id="close-stats-btn" class="text-slate-400 hover:text-slate-600 text-2xl font-bold w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+          ✕
+        </button>
+      </div>
+
+      <div id="stats-list" class="flex-1 overflow-y-auto pr-1">
+        <!-- 動態填入 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部提示 -->
+  <footer class="w-full text-center py-1 text-xs text-slate-400 font-medium flex-shrink-0">
+    為 <span id="current-user-name" class="font-bold text-slate-600">Tim</span> 的專屬英語拼字探險 🎈
+  </footer>
+
+  <!-- 全部程式碼與資料庫整合在單一檔案內，支援雙擊 index.html 直接執行 -->
+  <script>
+    // ==========================================
+    // 1. 單字題庫與分類資料庫 (全部內嵌 SVG，零外部依賴)
+    // ==========================================
+    const categories = [
+  {
+    "id": "grade1",
+    "name": "一年級",
+    "icon": "🎒"
+  },
+  {
+    "id": "grade2",
+    "name": "二年級",
+    "icon": "✏️"
+  },
+  {
+    "id": "grade3_ready",
+    "name": "三年級 Ready",
+    "icon": "🔤"
+  },
+  {
+    "id": "grade3_u1",
+    "name": "三年級 Unit 1",
+    "icon": "👋"
+  },
+  {
+    "id": "grade3_u2",
+    "name": "三年級 Unit 2",
+    "icon": "🔢"
+  },
+  {
+    "id": "grade3_u3",
+    "name": "三年級 Unit 3",
+    "icon": "📚"
+  },
+  {
+    "id": "grade3_u4",
+    "name": "三年級 Unit 4",
+    "icon": "🎨"
+  },
+  {
+    "id": "transit",
+    "name": "公車與捷運",
+    "icon": "🚌"
+  }
+];
+
+    const initialWords = [
+  {
+    "id": "g1_ant",
+    "word": "ANT",
+    "category": "grade1",
+    "translation": "螞蟻",
+    "phonics": "/ænt/",
+    "hint": "勤勞搬食物的小昆蟲",
+    "image": "images/ant.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400&q=80"
+  },
+  {
+    "id": "g1_apple",
+    "word": "APPLE",
+    "category": "grade1",
+    "translation": "蘋果",
+    "phonics": "/ˈæp.əl/",
+    "hint": "紅通通又脆又甜的健康水果",
+    "image": "images/apple.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80"
+  },
+  {
+    "id": "g1_ball",
+    "word": "BALL",
+    "category": "grade1",
+    "translation": "球",
+    "phonics": "/bɔːl/",
+    "hint": "圓圓的可以拍、踢和丟",
+    "image": "images/ball.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&q=80"
+  },
+  {
+    "id": "g1_boy",
+    "word": "BOY",
+    "category": "grade1",
+    "translation": "男孩",
+    "phonics": "/bɔɪ/",
+    "hint": "活力滿滿的帥氣小男生",
+    "image": "images/boy.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=400&q=80"
+  },
+  {
+    "id": "g1_bag",
+    "word": "BAG",
+    "category": "grade1",
+    "translation": "書包 / 袋子",
+    "phonics": "/bæɡ/",
+    "hint": "裝書本和文具的背包或袋子",
+    "image": "images/bag.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "g1_cat",
+    "word": "CAT",
+    "category": "grade1",
+    "translation": "貓咪",
+    "phonics": "/kæt/",
+    "hint": "會喵喵叫的小動物",
+    "image": "images/cat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&q=80"
+  },
+  {
+    "id": "g1_cup",
+    "word": "CUP",
+    "category": "grade1",
+    "translation": "茶杯",
+    "phonics": "/kʌp/",
+    "hint": "裝水和牛奶的小杯子",
+    "image": "images/cup.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&q=80"
+  },
+  {
+    "id": "g1_car",
+    "word": "CAR",
+    "category": "grade1",
+    "translation": "汽車",
+    "phonics": "/kɑːr/",
+    "hint": "在馬路上奔馳的四輪車",
+    "image": "images/car.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&q=80"
+  },
+  {
+    "id": "g1_dog",
+    "word": "DOG",
+    "category": "grade1",
+    "translation": "小狗",
+    "phonics": "/dɔːɡ/",
+    "hint": "會汪汪叫搖尾巴的忠心寵物",
+    "image": "images/dog.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&q=80"
+  },
+  {
+    "id": "g1_duck",
+    "word": "DUCK",
+    "category": "grade1",
+    "translation": "鴨子",
+    "phonics": "/dʌk/",
+    "hint": "呱呱叫會游泳的黃色小鴨",
+    "image": "images/duck.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=400&q=80"
+  },
+  {
+    "id": "g1_egg",
+    "word": "EGG",
+    "category": "grade1",
+    "translation": "雞蛋",
+    "phonics": "/eɡ/",
+    "hint": "圓圓滑滑可以煎蛋的營養蛋",
+    "image": "images/egg.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80"
+  },
+  {
+    "id": "g1_elephant",
+    "word": "ELEPHANT",
+    "category": "grade1",
+    "translation": "大象",
+    "phonics": "/ˈel.ə.fənt/",
+    "hint": "長鼻子大耳朵的陸地龐然大物",
+    "image": "images/elephant.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?w=400&q=80"
+  },
+  {
+    "id": "g1_fish",
+    "word": "FISH",
+    "category": "grade1",
+    "translation": "小魚",
+    "phonics": "/fɪʃ/",
+    "hint": "在水裡游來游去吐泡泡",
+    "image": "images/fish.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=400&q=80"
+  },
+  {
+    "id": "g1_frog",
+    "word": "FROG",
+    "category": "grade1",
+    "translation": "青蛙",
+    "phonics": "/frɑːɡ/",
+    "hint": "呱呱叫跳得高高的綠色青蛙",
+    "image": "images/frog.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1559253664-ca249d4608c6?w=400&q=80"
+  },
+  {
+    "id": "g1_girl",
+    "word": "GIRL",
+    "category": "grade1",
+    "translation": "女孩",
+    "phonics": "/ɡɜːrl/",
+    "hint": "可愛又活潑的小女生",
+    "image": "images/girl.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80"
+  },
+  {
+    "id": "g1_goat",
+    "word": "GOAT",
+    "category": "grade1",
+    "translation": "山羊",
+    "phonics": "/ɡoʊt/",
+    "hint": "頭上有角下巴有小鬍子的山羊",
+    "image": "images/goat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524024973431-2ad916746881?w=400&q=80"
+  },
+  {
+    "id": "g1_hat",
+    "word": "HAT",
+    "category": "grade1",
+    "translation": "帽子",
+    "phonics": "/hæt/",
+    "hint": "戴在頭上遮陽保暖的圓帽子",
+    "image": "images/hat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=400&q=80"
+  },
+  {
+    "id": "g1_hen",
+    "word": "HEN",
+    "category": "grade1",
+    "translation": "母雞",
+    "phonics": "/hen/",
+    "hint": "咕咕咕會生雞蛋的母雞",
+    "image": "images/hen.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&q=80"
+  },
+  {
+    "id": "g1_igloo",
+    "word": "IGLOO",
+    "category": "grade1",
+    "translation": "圓頂冰屋",
+    "phonics": "/ˈɪɡ.luː/",
+    "hint": "極地用冰塊堆砌成的圓圓屋子",
+    "image": "images/igloo.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400&q=80"
+  },
+  {
+    "id": "g1_ink",
+    "word": "INK",
+    "category": "grade1",
+    "translation": "墨水",
+    "phonics": "/ɪŋk/",
+    "hint": "寫字畫畫用的黑色或彩色墨水",
+    "image": "images/ink.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1585336261026-c5603b544b64?w=400&q=80"
+  },
+  {
+    "id": "g1_jet",
+    "word": "JET",
+    "category": "grade1",
+    "translation": "噴射機",
+    "phonics": "/dʒet/",
+    "hint": "飛得超快的帥氣噴射客機",
+    "image": "images/jet.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80"
+  },
+  {
+    "id": "g1_juice",
+    "word": "JUICE",
+    "category": "grade1",
+    "translation": "果汁",
+    "phonics": "/dʒuːs/",
+    "hint": "新鮮水果榨出來好喝的果汁",
+    "image": "images/juice.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&q=80"
+  },
+  {
+    "id": "g1_kite",
+    "word": "KITE",
+    "category": "grade1",
+    "translation": "風箏",
+    "phonics": "/kaɪt/",
+    "hint": "草地上牽著線隨風飛舞的風箏",
+    "image": "images/kite.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80"
+  },
+  {
+    "id": "g1_king",
+    "word": "KING",
+    "category": "grade1",
+    "translation": "國王",
+    "phonics": "/kɪŋ/",
+    "hint": "頭戴金色王冠的尊貴統治者",
+    "image": "images/king.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g1_lion",
+    "word": "LION",
+    "category": "grade1",
+    "translation": "獅子",
+    "phonics": "/ˈlaɪ.ən/",
+    "hint": "有金色鬃毛的草原萬獸之王",
+    "image": "images/lion.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?w=400&q=80"
+  },
+  {
+    "id": "g1_leg",
+    "word": "LEG",
+    "category": "grade1",
+    "translation": "腿 / 腳",
+    "phonics": "/leɡ/",
+    "hint": "走路跑步跳躍一定要用的腿",
+    "image": "images/leg.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=400&q=80"
+  },
+  {
+    "id": "g1_monkey",
+    "word": "MONKEY",
+    "category": "grade1",
+    "translation": "猴子",
+    "phonics": "/ˈmʌŋ.ki/",
+    "hint": "愛吃香蕉在樹林間盪來盪去",
+    "image": "images/monkey.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=400&q=80"
+  },
+  {
+    "id": "g1_milk",
+    "word": "MILK",
+    "category": "grade1",
+    "translation": "牛奶",
+    "phonics": "/mɪlk/",
+    "hint": "香濃營養喝了長高高的乳品",
+    "image": "images/milk.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&q=80"
+  },
+  {
+    "id": "g1_net",
+    "word": "NET",
+    "category": "grade1",
+    "translation": "網子",
+    "phonics": "/net/",
+    "hint": "打球運動或抓小昆蟲的網子",
+    "image": "images/net.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=80"
+  },
+  {
+    "id": "g1_nose",
+    "word": "NOSE",
+    "category": "grade1",
+    "translation": "鼻子",
+    "phonics": "/noʊz/",
+    "hint": "長在臉中間用來聞花香的器官",
+    "image": "images/nose.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80"
+  },
+  {
+    "id": "g1_happy",
+    "word": "HAPPY",
+    "category": "grade1",
+    "translation": "開心的",
+    "phonics": "/ˈhæp.i/",
+    "hint": "臉上洋溢燦爛笑容好快樂",
+    "image": "images/happy.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80"
+  },
+  {
+    "id": "g1_sad",
+    "word": "SAD",
+    "category": "grade1",
+    "translation": "難過的",
+    "phonics": "/sæd/",
+    "hint": "心情低落想哭哭的難過心情",
+    "image": "images/sad.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=400&q=80"
+  },
+  {
+    "id": "g2_ox",
+    "word": "OX",
+    "category": "grade2",
+    "translation": "公牛",
+    "phonics": "/ɑːks/",
+    "hint": "力氣很大體格強壯的公牛",
+    "image": "images/ox.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=400&q=80"
+  },
+  {
+    "id": "g2_octopus",
+    "word": "OCTOPUS",
+    "category": "grade2",
+    "translation": "章魚",
+    "phonics": "/ˈɑːk.tə.pəs/",
+    "hint": "有八隻長長觸手的海洋生物",
+    "image": "images/octopus.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1545671913-b89ac1b4ac10?w=400&q=80"
+  },
+  {
+    "id": "g2_pig",
+    "word": "PIG",
+    "category": "grade2",
+    "translation": "小豬",
+    "phonics": "/pɪɡ/",
+    "hint": "粉紅色大鼻孔的小豬",
+    "image": "images/pig.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&q=80"
+  },
+  {
+    "id": "g2_queen",
+    "word": "QUEEN",
+    "category": "grade2",
+    "translation": "皇后",
+    "phonics": "/kwiːn/",
+    "hint": "戴著寶石皇冠的高貴女王",
+    "image": "images/queen.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80"
+  },
+  {
+    "id": "g2_quilt",
+    "word": "QUILT",
+    "category": "grade2",
+    "translation": "被子",
+    "phonics": "/kwɪlt/",
+    "hint": "睡覺時蓋在身上好溫暖的花被子",
+    "image": "images/quilt.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=400&q=80"
+  },
+  {
+    "id": "g2_rabbit",
+    "word": "RABBIT",
+    "category": "grade2",
+    "translation": "兔子",
+    "phonics": "/ˈræb.ɪt/",
+    "hint": "長耳朵蹦蹦跳愛吃紅蘿蔔的動物",
+    "image": "images/rabbit.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80"
+  },
+  {
+    "id": "g2_ring",
+    "word": "RING",
+    "category": "grade2",
+    "translation": "戒指",
+    "phonics": "/rɪŋ/",
+    "hint": "戴在手指上的漂亮圓圈飾品",
+    "image": "images/ring.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&q=80"
+  },
+  {
+    "id": "g2_sun",
+    "word": "SUN",
+    "category": "grade2",
+    "translation": "太陽",
+    "phonics": "/sʌn/",
+    "hint": "天空中給大地溫暖與光明的大火球",
+    "image": "images/sun.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80"
+  },
+  {
+    "id": "g2_sock",
+    "word": "SOCK",
+    "category": "grade2",
+    "translation": "襪子",
+    "phonics": "/sɑːk/",
+    "hint": "套在腳上再穿球鞋的保暖襪子",
+    "image": "images/sock.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1582966779680-91953ebbb574?w=400&q=80"
+  },
+  {
+    "id": "g2_tiger",
+    "word": "TIGER",
+    "category": "grade2",
+    "translation": "老虎",
+    "phonics": "/ˈtaɪ.ɡər/",
+    "hint": "身上有黑色條紋的威猛森林之王",
+    "image": "images/tiger.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=400&q=80"
+  },
+  {
+    "id": "g2_top",
+    "word": "TOP",
+    "category": "grade2",
+    "translation": "陀螺",
+    "phonics": "/tɑːp/",
+    "hint": "用繩子抽或手轉圈圈的童玩",
+    "image": "images/top.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=400&q=80"
+  },
+  {
+    "id": "g2_eye",
+    "word": "EYE",
+    "category": "grade2",
+    "translation": "眼睛",
+    "phonics": "/aɪ/",
+    "hint": "看美麗世界與閱讀書籍的眼睛",
+    "image": "images/eye.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80"
+  },
+  {
+    "id": "g2_ear",
+    "word": "EAR",
+    "category": "grade2",
+    "translation": "耳朵",
+    "phonics": "/ɪr/",
+    "hint": "聽動聽音樂與老師講話的耳朵",
+    "image": "images/ear.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516726817505-f5ed825624d8?w=400&q=80"
+  },
+  {
+    "id": "g2_mouth",
+    "word": "MOUTH",
+    "category": "grade2",
+    "translation": "嘴巴",
+    "phonics": "/maʊθ/",
+    "hint": "說話唱英文歌吃美食的嘴巴",
+    "image": "images/mouth.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1588515724527-074a7a56616c?w=400&q=80"
+  },
+  {
+    "id": "g2_hand",
+    "word": "HAND",
+    "category": "grade2",
+    "translation": "手",
+    "phonics": "/hænd/",
+    "hint": "有五隻手指可以寫字畫圖握手",
+    "image": "images/hand.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516914943479-89db7d9ae7f2?w=400&q=80"
+  },
+  {
+    "id": "g2_head",
+    "word": "HEAD",
+    "category": "grade2",
+    "translation": "頭",
+    "phonics": "/hed/",
+    "hint": "長著頭髮思考聰明問題的腦袋",
+    "image": "images/head.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80"
+  },
+  {
+    "id": "g2_puppy",
+    "word": "PUPPY",
+    "category": "grade2",
+    "translation": "小狗",
+    "phonics": "/ˈpʌp.i/",
+    "hint": "毛茸茸剛剛出生的可愛小狗狗",
+    "image": "images/puppy.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=400&q=80"
+  },
+  {
+    "id": "g2_kitten",
+    "word": "KITTEN",
+    "category": "grade2",
+    "translation": "小貓",
+    "phonics": "/ˈkɪt.ən/",
+    "hint": "萌翻天眼睛圓溜溜的小貓咪",
+    "image": "images/kitten.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=400&q=80"
+  },
+  {
+    "id": "g2_bird",
+    "word": "BIRD",
+    "category": "grade2",
+    "translation": "小鳥",
+    "phonics": "/bɜːrd/",
+    "hint": "在樹枝上唱歌拍翅膀飛翔的鳥",
+    "image": "images/bird.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1444464666168-49d633b86797?w=400&q=80"
+  },
+  {
+    "id": "g2_umbrella",
+    "word": "UMBRELLA",
+    "category": "grade2",
+    "translation": "雨傘",
+    "phonics": "/ʌmˈbrel.ə/",
+    "hint": "下雨天撐開擋雨的漂亮雨傘",
+    "image": "images/umbrella.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80"
+  },
+  {
+    "id": "g2_vest",
+    "word": "VEST",
+    "category": "grade2",
+    "translation": "背心",
+    "phonics": "/vest/",
+    "hint": "沒有袖子穿在衣服外面的保暖背心",
+    "image": "images/vest.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80"
+  },
+  {
+    "id": "g2_van",
+    "word": "VAN",
+    "category": "grade2",
+    "translation": "廂型車",
+    "phonics": "/væn/",
+    "hint": "可以載全家人去露營的大廂型車",
+    "image": "images/van.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1527786356703-4b100091cd2c?w=400&q=80"
+  },
+  {
+    "id": "g2_watch",
+    "word": "WATCH",
+    "category": "grade2",
+    "translation": "手錶",
+    "phonics": "/wɑːtʃ/",
+    "hint": "戴在手腕上看時間的精緻鐘錶",
+    "image": "images/watch.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&q=80"
+  },
+  {
+    "id": "g2_window",
+    "word": "WINDOW",
+    "category": "grade2",
+    "translation": "窗戶",
+    "phonics": "/ˈwɪn.doʊ/",
+    "hint": "房間牆壁上透進陽光和微風的玻璃窗",
+    "image": "images/window.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80"
+  },
+  {
+    "id": "g2_box",
+    "word": "BOX",
+    "category": "grade2",
+    "translation": "盒子 / 箱子",
+    "phonics": "/bɑːks/",
+    "hint": "可以裝玩具或禮物的箱子",
+    "image": "images/box.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&q=80"
+  },
+  {
+    "id": "g2_fox",
+    "word": "FOX",
+    "category": "grade2",
+    "translation": "狐狸",
+    "phonics": "/fɑːks/",
+    "hint": "橘紅色蓬鬆尾巴的聰明動物",
+    "image": "images/fox.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=400&q=80"
+  },
+  {
+    "id": "g2_yoyo",
+    "word": "YOYO",
+    "category": "grade2",
+    "translation": "溜溜球",
+    "phonics": "/ˈjoʊ.joʊ/",
+    "hint": "牽著繩子可以上下飛速旋轉的玩具",
+    "image": "images/yoyo.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=400&q=80"
+  },
+  {
+    "id": "g2_zebra",
+    "word": "ZEBRA",
+    "category": "grade2",
+    "translation": "斑馬",
+    "phonics": "/ˈziː.brə/",
+    "hint": "全身黑白相間條紋的大草原馬兒",
+    "image": "images/zebra.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=400&q=80"
+  },
+  {
+    "id": "g2_zoo",
+    "word": "ZOO",
+    "category": "grade2",
+    "translation": "動物園",
+    "phonics": "/zuː/",
+    "hint": "有很多動物朋友可以參觀的好地方",
+    "image": "images/zoo.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400&q=80"
+  },
+  {
+    "id": "g2_banana",
+    "word": "BANANA",
+    "category": "grade2",
+    "translation": "香蕉",
+    "phonics": "/bəˈnæn.ə/",
+    "hint": "黃黃彎彎剝皮就可以吃的甜甜水果",
+    "image": "images/banana.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80"
+  },
+  {
+    "id": "g2_cake",
+    "word": "CAKE",
+    "category": "grade2",
+    "translation": "蛋糕",
+    "phonics": "/keɪk/",
+    "hint": "過生日慶祝必備的香甜奶油蛋糕",
+    "image": "images/cake.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80"
+  },
+  {
+    "id": "g2_water",
+    "word": "WATER",
+    "category": "grade2",
+    "translation": "水",
+    "phonics": "/ˈwɑː.t̬ɚ/",
+    "hint": "透明解渴生命不可缺少的飲用水",
+    "image": "images/water.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=400&q=80"
+  },
+  {
+    "id": "g3_r_apple",
+    "word": "APPLE",
+    "category": "grade3_ready",
+    "translation": "蘋果",
+    "phonics": "/ˈæp.əl/",
+    "hint": "紅通通清脆可口的水果",
+    "image": "images/apple.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80"
+  },
+  {
+    "id": "g3_r_boy",
+    "word": "BOY",
+    "category": "grade3_ready",
+    "translation": "男孩",
+    "phonics": "/bɔɪ/",
+    "hint": "活潑好動的小男生",
+    "image": "images/boy.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=400&q=80"
+  },
+  {
+    "id": "g3_r_cat",
+    "word": "CAT",
+    "category": "grade3_ready",
+    "translation": "貓咪",
+    "phonics": "/kæt/",
+    "hint": "會喵喵叫撒嬌的小貓",
+    "image": "images/cat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&q=80"
+  },
+  {
+    "id": "g3_r_dog",
+    "word": "DOG",
+    "category": "grade3_ready",
+    "translation": "小狗",
+    "phonics": "/dɔːɡ/",
+    "hint": "汪汪叫的好朋友小狗",
+    "image": "images/dog.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&q=80"
+  },
+  {
+    "id": "g3_r_egg",
+    "word": "EGG",
+    "category": "grade3_ready",
+    "translation": "雞蛋",
+    "phonics": "/eɡ/",
+    "hint": "圓滾滾營養豐富的雞蛋",
+    "image": "images/egg.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80"
+  },
+  {
+    "id": "g3_r_fish",
+    "word": "FISH",
+    "category": "grade3_ready",
+    "translation": "小魚",
+    "phonics": "/fɪʃ/",
+    "hint": "在水池裡暢游吐泡泡的魚兒",
+    "image": "images/fish.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=400&q=80"
+  },
+  {
+    "id": "g3_r_girl",
+    "word": "GIRL",
+    "category": "grade3_ready",
+    "translation": "女孩",
+    "phonics": "/ɡɜːrl/",
+    "hint": "親切聰明的小女孩",
+    "image": "images/girl.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80"
+  },
+  {
+    "id": "g3_r_hat",
+    "word": "HAT",
+    "category": "grade3_ready",
+    "translation": "帽子",
+    "phonics": "/hæt/",
+    "hint": "戴在頭上的遮陽帽",
+    "image": "images/hat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=400&q=80"
+  },
+  {
+    "id": "g3_r_ink",
+    "word": "INK",
+    "category": "grade3_ready",
+    "translation": "墨水",
+    "phonics": "/ɪŋk/",
+    "hint": "鋼筆和印表機用的墨水",
+    "image": "images/ink.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1585336261026-c5603b544b64?w=400&q=80"
+  },
+  {
+    "id": "g3_r_jet",
+    "word": "JET",
+    "category": "grade3_ready",
+    "translation": "噴射機",
+    "phonics": "/dʒet/",
+    "hint": "天空中超音速飛行的噴射客機",
+    "image": "images/jet.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80"
+  },
+  {
+    "id": "g3_r_kite",
+    "word": "KITE",
+    "category": "grade3_ready",
+    "translation": "風箏",
+    "phonics": "/kaɪt/",
+    "hint": "在春風中高高飛翔的風箏",
+    "image": "images/kite.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80"
+  },
+  {
+    "id": "g3_r_lion",
+    "word": "LION",
+    "category": "grade3_ready",
+    "translation": "獅子",
+    "phonics": "/ˈlaɪ.ən/",
+    "hint": "威猛吼叫的草原百獸之王",
+    "image": "images/lion.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?w=400&q=80"
+  },
+  {
+    "id": "g3_r_milk",
+    "word": "MILK",
+    "category": "grade3_ready",
+    "translation": "牛奶",
+    "phonics": "/mɪlk/",
+    "hint": "早餐搭配麥片的營養純牛奶",
+    "image": "images/milk.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&q=80"
+  },
+  {
+    "id": "g3_r_net",
+    "word": "NET",
+    "category": "grade3_ready",
+    "translation": "網子",
+    "phonics": "/net/",
+    "hint": "捕魚或打球必備的網子",
+    "image": "images/net.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=80"
+  },
+  {
+    "id": "g3_r_pig",
+    "word": "PIG",
+    "category": "grade3_ready",
+    "translation": "小豬",
+    "phonics": "/pɪɡ/",
+    "hint": "圓圓大鼻子粉紅色小豬",
+    "image": "images/pig.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_hello",
+    "word": "HELLO",
+    "category": "grade3_u1",
+    "translation": "哈囉 / 你好",
+    "phonics": "/həˈloʊ/",
+    "hint": "見面打招呼最常用的問候語",
+    "image": "images/hello.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_hi",
+    "word": "HI",
+    "category": "grade3_u1",
+    "translation": "嗨",
+    "phonics": "/haɪ/",
+    "hint": "跟朋友打招呼的簡短用語",
+    "image": "images/hi.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_goodbye",
+    "word": "GOODBYE",
+    "category": "grade3_u1",
+    "translation": "再見",
+    "phonics": "/ˌɡʊdˈbaɪ/",
+    "hint": "放學或分開時說的再會",
+    "image": "images/goodbye.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_bye",
+    "word": "BYE",
+    "category": "grade3_u1",
+    "translation": "掰掰",
+    "phonics": "/baɪ/",
+    "hint": "揮揮手說掰掰",
+    "image": "images/bye.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_name",
+    "word": "NAME",
+    "category": "grade3_u1",
+    "translation": "名字",
+    "phonics": "/neɪm/",
+    "hint": "每個人的專屬稱呼 (What is your name?)",
+    "image": "images/name.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_friend",
+    "word": "FRIEND",
+    "category": "grade3_u1",
+    "translation": "朋友",
+    "phonics": "/frend/",
+    "hint": "一起讀書玩遊戲的好夥伴",
+    "image": "images/friend.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_i",
+    "word": "I",
+    "category": "grade3_u1",
+    "translation": "我",
+    "phonics": "/aɪ/",
+    "hint": "代表自己的第一人稱代名詞",
+    "image": "images/i.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "isProperNoun": true
+  },
+  {
+    "id": "g3_u1_you",
+    "word": "YOU",
+    "category": "grade3_u1",
+    "translation": "你",
+    "phonics": "/juː/",
+    "hint": "代表對方的第二人稱代名詞",
+    "image": "images/you.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_am",
+    "word": "AM",
+    "category": "grade3_u1",
+    "translation": "是",
+    "phonics": "/æm/",
+    "hint": "搭配 I 的動詞 (I am Tim.)",
+    "image": "images/am.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80"
+  },
+  {
+    "id": "g3_u1_are",
+    "word": "ARE",
+    "category": "grade3_u1",
+    "translation": "是",
+    "phonics": "/ɑːr/",
+    "hint": "搭配 you 的動詞 (You are my friend.)",
+    "image": "images/are.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_one",
+    "word": "ONE",
+    "category": "grade3_u2",
+    "translation": "一",
+    "phonics": "/wʌn/",
+    "hint": "數字 1",
+    "image": "images/one.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_two",
+    "word": "TWO",
+    "category": "grade3_u2",
+    "translation": "二",
+    "phonics": "/tuː/",
+    "hint": "數字 2",
+    "image": "images/two.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_three",
+    "word": "THREE",
+    "category": "grade3_u2",
+    "translation": "三",
+    "phonics": "/θriː/",
+    "hint": "數字 3",
+    "image": "images/three.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_four",
+    "word": "FOUR",
+    "category": "grade3_u2",
+    "translation": "四",
+    "phonics": "/fɔːr/",
+    "hint": "數字 4",
+    "image": "images/four.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_five",
+    "word": "FIVE",
+    "category": "grade3_u2",
+    "translation": "五",
+    "phonics": "/faɪv/",
+    "hint": "數字 5",
+    "image": "images/five.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_six",
+    "word": "SIX",
+    "category": "grade3_u2",
+    "translation": "六",
+    "phonics": "/sɪks/",
+    "hint": "數字 6",
+    "image": "images/six.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_seven",
+    "word": "SEVEN",
+    "category": "grade3_u2",
+    "translation": "七",
+    "phonics": "/ˈsev.ən/",
+    "hint": "數字 7",
+    "image": "images/seven.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_eight",
+    "word": "EIGHT",
+    "category": "grade3_u2",
+    "translation": "八",
+    "phonics": "/eɪt/",
+    "hint": "數字 8",
+    "image": "images/eight.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_nine",
+    "word": "NINE",
+    "category": "grade3_u2",
+    "translation": "九",
+    "phonics": "/naɪn/",
+    "hint": "數字 9",
+    "image": "images/nine.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_ten",
+    "word": "TEN",
+    "category": "grade3_u2",
+    "translation": "十",
+    "phonics": "/ten/",
+    "hint": "數字 10",
+    "image": "images/ten.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_how",
+    "word": "HOW",
+    "category": "grade3_u2",
+    "translation": "如何 / 多大",
+    "phonics": "/haʊ/",
+    "hint": "疑問詞 (How old are you?)",
+    "image": "images/how.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_old",
+    "word": "OLD",
+    "category": "grade3_u2",
+    "translation": "歲數的",
+    "phonics": "/oʊld/",
+    "hint": "年紀、歲數的形容詞",
+    "image": "images/old.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80"
+  },
+  {
+    "id": "g3_u2_year",
+    "word": "YEAR",
+    "category": "grade3_u2",
+    "translation": "歲 / 年",
+    "phonics": "/jɪr/",
+    "hint": "年齡與時間的計量單位 (years old)",
+    "image": "images/year.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_pen",
+    "word": "PEN",
+    "category": "grade3_u3",
+    "translation": "原子筆",
+    "phonics": "/pen/",
+    "hint": "寫字畫畫的墨水筆",
+    "image": "images/pen.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_pencil",
+    "word": "PENCIL",
+    "category": "grade3_u3",
+    "translation": "鉛筆",
+    "phonics": "/ˈpen.səl/",
+    "hint": "可以用橡皮擦擦掉的木頭鉛筆",
+    "image": "images/pencil.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1585336261026-c5603b544b64?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_eraser",
+    "word": "ERASER",
+    "category": "grade3_u3",
+    "translation": "橡皮擦",
+    "phonics": "/ɪˈreɪ.sər/",
+    "hint": "把寫錯字擦乾淨的神奇擦子",
+    "image": "images/eraser.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_ruler",
+    "word": "RULER",
+    "category": "grade3_u3",
+    "translation": "尺",
+    "phonics": "/ˈruː.lər/",
+    "hint": "量長度畫直線的直尺",
+    "image": "images/ruler.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_book",
+    "word": "BOOK",
+    "category": "grade3_u3",
+    "translation": "書本",
+    "phonics": "/bʊk/",
+    "hint": "裝滿故事與知識的讀物",
+    "image": "images/book.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_bag",
+    "word": "BAG",
+    "category": "grade3_u3",
+    "translation": "書包 / 袋子",
+    "phonics": "/bæɡ/",
+    "hint": "上學背書本的大書包",
+    "image": "images/bag.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_desk",
+    "word": "DESK",
+    "category": "grade3_u3",
+    "translation": "書桌",
+    "phonics": "/desk/",
+    "hint": "在教室寫作業看書的桌子",
+    "image": "images/desk.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_chair",
+    "word": "CHAIR",
+    "category": "grade3_u3",
+    "translation": "椅子",
+    "phonics": "/tʃer/",
+    "hint": "在教室上課坐的椅子",
+    "image": "images/chair.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503602642458-232111445657?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_this",
+    "word": "THIS",
+    "category": "grade3_u3",
+    "translation": "這個",
+    "phonics": "/ðɪs/",
+    "hint": "指靠近自己的東西 (What is this?)",
+    "image": "images/this.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_that",
+    "word": "THAT",
+    "category": "grade3_u3",
+    "translation": "那個",
+    "phonics": "/ðæt/",
+    "hint": "指距離自己較遠的東西 (What is that?)",
+    "image": "images/that.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_what",
+    "word": "WHAT",
+    "category": "grade3_u3",
+    "translation": "什麼",
+    "phonics": "/wɑːt/",
+    "hint": "疑問句常用開頭 (What is it?)",
+    "image": "images/what.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_it",
+    "word": "IT",
+    "category": "grade3_u3",
+    "translation": "它",
+    "phonics": "/ɪt/",
+    "hint": "代表事物或動物的代名詞 (It is a ruler.)",
+    "image": "images/it.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80"
+  },
+  {
+    "id": "g3_u3_is",
+    "word": "IS",
+    "category": "grade3_u3",
+    "translation": "是",
+    "phonics": "/ɪz/",
+    "hint": "動詞 (It is a pencil.)",
+    "image": "images/is.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_red",
+    "word": "RED",
+    "category": "grade3_u4",
+    "translation": "紅色",
+    "phonics": "/red/",
+    "hint": "像蘋果和草莓一樣鮮豔的紅",
+    "image": "images/red.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_yellow",
+    "word": "YELLOW",
+    "category": "grade3_u4",
+    "translation": "黃色",
+    "phonics": "/ˈjel.oʊ/",
+    "hint": "像香蕉和向日葵一樣明亮的黃",
+    "image": "images/yellow.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_blue",
+    "word": "BLUE",
+    "category": "grade3_u4",
+    "translation": "藍色",
+    "phonics": "/bluː/",
+    "hint": "像大海和晴朗天空一樣的蔚藍",
+    "image": "images/blue.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_green",
+    "word": "GREEN",
+    "category": "grade3_u4",
+    "translation": "綠色",
+    "phonics": "/ɡriːn/",
+    "hint": "像大樹綠葉與草地一樣的青綠",
+    "image": "images/green.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_orange",
+    "word": "ORANGE",
+    "category": "grade3_u4",
+    "translation": "橘色",
+    "phonics": "/ˈɔːr.ɪndʒ/",
+    "hint": "像橘子一樣溫暖甜美的橙橘色",
+    "image": "images/orange.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1557800636-894a64c1696f?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_pink",
+    "word": "PINK",
+    "category": "grade3_u4",
+    "translation": "粉紅色",
+    "phonics": "/pɪŋk/",
+    "hint": "甜美可愛的粉紅色",
+    "image": "images/pink.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_black",
+    "word": "BLACK",
+    "category": "grade3_u4",
+    "translation": "黑色",
+    "phonics": "/blæk/",
+    "hint": "像夜空一樣深邃神祕的黑色",
+    "image": "images/black.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_white",
+    "word": "WHITE",
+    "category": "grade3_u4",
+    "translation": "白色",
+    "phonics": "/waɪt/",
+    "hint": "像白雲和雪花一樣潔淨的白",
+    "image": "images/white.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_purple",
+    "word": "PURPLE",
+    "category": "grade3_u4",
+    "translation": "紫色",
+    "phonics": "/ˈpɜːr.pəl/",
+    "hint": "像葡萄一樣高雅華麗的紫",
+    "image": "images/purple.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_brown",
+    "word": "BROWN",
+    "category": "grade3_u4",
+    "translation": "咖啡色 / 棕色",
+    "phonics": "/braʊn/",
+    "hint": "像巧克力和樹幹一樣的棕褐色",
+    "image": "images/brown.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_color",
+    "word": "COLOR",
+    "category": "grade3_u4",
+    "translation": "顏色",
+    "phonics": "/ˈkʌl.ər/",
+    "hint": "彩虹般繽紛的色彩 (What color is it?)",
+    "image": "images/color.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_card",
+    "word": "CARD",
+    "category": "grade3_u4",
+    "translation": "卡片",
+    "phonics": "/kɑːrd/",
+    "hint": "節日寫滿溫暖祝福的卡片",
+    "image": "images/card.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_bell",
+    "word": "BELL",
+    "category": "grade3_u4",
+    "translation": "鈴鐺",
+    "phonics": "/bel/",
+    "hint": "叮叮噹發出清脆悅耳聲響的小鈴鐺",
+    "image": "images/bell.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_tree",
+    "word": "TREE",
+    "category": "grade3_u4",
+    "translation": "聖誕樹 / 樹",
+    "phonics": "/triː/",
+    "hint": "掛滿彩球閃閃發亮的漂亮聖誕樹",
+    "image": "images/tree.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=400&q=80"
+  },
+  {
+    "id": "g3_u4_star",
+    "word": "STAR",
+    "category": "grade3_u4",
+    "translation": "星星",
+    "phonics": "/stɑːr/",
+    "hint": "掛在聖誕樹頂上一閃一閃的金黃星星",
+    "image": "images/star.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80"
+  },
+  {
+    "id": "tr_bus",
+    "word": "BUS",
+    "category": "transit",
+    "translation": "公車 / 巴士",
+    "phonics": "/bʌs/",
+    "hint": "在大馬路上行駛接送乘客的大客車",
+    "image": "images/bus.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400&q=80"
+  },
+  {
+    "id": "tr_train",
+    "word": "TRAIN",
+    "category": "transit",
+    "translation": "火車",
+    "phonics": "/treɪn/",
+    "hint": "在鐵軌上奔馳長長的鐵路列車",
+    "image": "images/train.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_metro",
+    "word": "METRO",
+    "category": "transit",
+    "translation": "捷運",
+    "phonics": "/ˈmet.roʊ/",
+    "hint": "城市裡四通八達的高架或地下大眾捷運",
+    "image": "images/metro.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_subway",
+    "word": "SUBWAY",
+    "category": "transit",
+    "translation": "地鐵",
+    "phonics": "/ˈsʌb.weɪ/",
+    "hint": "穿梭在地底隧道裡的快速地下鐵路",
+    "image": "images/subway.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&q=80"
+  },
+  {
+    "id": "tr_tram",
+    "word": "TRAM",
+    "category": "transit",
+    "translation": "路面電車",
+    "phonics": "/træm/",
+    "hint": "在馬路上鋪設軌道行駛的有軌電車",
+    "image": "images/tram.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&q=80"
+  },
+  {
+    "id": "tr_rail",
+    "word": "RAIL",
+    "category": "transit",
+    "translation": "鐵路 / 鐵軌",
+    "phonics": "/reɪl/",
+    "hint": "鐵路交通運輸系統或鋼軌",
+    "image": "images/rail.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_express",
+    "word": "EXPRESS",
+    "category": "transit",
+    "translation": "特快車 / 直達車",
+    "phonics": "/ɪkˈspres/",
+    "hint": "只停少數大站的高速直達列車",
+    "image": "images/express.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80"
+  },
+  {
+    "id": "tr_bullet",
+    "word": "BULLET",
+    "category": "transit",
+    "translation": "子彈列車 / 高鐵",
+    "phonics": "/ˈbʊl.ɪt/",
+    "hint": "外型流線速度超快的高速鐵路列車",
+    "image": "images/bullet.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80"
+  },
+  {
+    "id": "tr_shuttle",
+    "word": "SHUTTLE",
+    "category": "transit",
+    "translation": "接駁車",
+    "phonics": "/ˈʃʌt.əl/",
+    "hint": "在兩個地點之間來回穿梭載客的專車",
+    "image": "images/shuttle.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400&q=80"
+  },
+  {
+    "id": "tr_coach",
+    "word": "COACH",
+    "category": "transit",
+    "translation": "長途客運 / 大巴",
+    "phonics": "/koʊtʃ/",
+    "hint": "舒適跑高速公路跨縣市的長途大巴士",
+    "image": "images/coach.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_ferry",
+    "word": "FERRY",
+    "category": "transit",
+    "translation": "渡輪",
+    "phonics": "/ˈfer.i/",
+    "hint": "在海港河流接駁乘客與車輛的渡船",
+    "image": "images/ferry.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"
+  },
+  {
+    "id": "tr_taxi",
+    "word": "TAXI",
+    "category": "transit",
+    "translation": "計程車",
+    "phonics": "/ˈtæk.si/",
+    "hint": "招手隨招隨停的黃色計程車",
+    "image": "images/taxi.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&q=80"
+  },
+  {
+    "id": "tr_bike",
+    "word": "BIKE",
+    "category": "transit",
+    "translation": "腳踏車 / 單車",
+    "phonics": "/baɪk/",
+    "hint": "捷運站外常有的公共租借自行車",
+    "image": "images/bike.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&q=80"
+  },
+  {
+    "id": "tr_van",
+    "word": "VAN",
+    "category": "transit",
+    "translation": "廂型車",
+    "phonics": "/væn/",
+    "hint": "能載很多人和行李的小型巴士或客貨車",
+    "image": "images/van.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1527786356703-4b100091cd2c?w=400&q=80"
+  },
+  {
+    "id": "tr_vehicle",
+    "word": "VEHICLE",
+    "category": "transit",
+    "translation": "車輛 / 交通工具",
+    "phonics": "/ˈviː.ə.kəl/",
+    "hint": "路上所有行駛的汽機車與大眾運具",
+    "image": "images/vehicle.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&q=80"
+  },
+  {
+    "id": "tr_traffic",
+    "word": "TRAFFIC",
+    "category": "transit",
+    "translation": "交通 / 車流",
+    "phonics": "/ˈtræf.ɪk/",
+    "hint": "馬路上來來往往的車潮與交通路況",
+    "image": "images/traffic.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_transit",
+    "word": "TRANSIT",
+    "category": "transit",
+    "translation": "大眾運輸",
+    "phonics": "/ˈtræn.zɪt/",
+    "hint": "城市中方便大眾出行的捷運與公車系統",
+    "image": "images/transit.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_station",
+    "word": "STATION",
+    "category": "transit",
+    "translation": "車站 / 捷運站",
+    "phonics": "/ˈsteɪ.ʃən/",
+    "hint": "乘客買票、上下火車或捷運的建築大廳",
+    "image": "images/station.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_stop",
+    "word": "STOP",
+    "category": "transit",
+    "translation": "公車站牌 / 停靠站",
+    "phonics": "/stɑːp/",
+    "hint": "路邊豎立讓公車停靠乘客上下車的站牌",
+    "image": "images/stop.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1557223562-6c77ef16210f?w=400&q=80"
+  },
+  {
+    "id": "tr_terminal",
+    "word": "TERMINAL",
+    "category": "transit",
+    "translation": "終點站 / 總站",
+    "phonics": "/ˈtɜːr.mə.nəl/",
+    "hint": "路線最後一站或所有路線交會的大客運站",
+    "image": "images/terminal.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_platform",
+    "word": "PLATFORM",
+    "category": "transit",
+    "translation": "月台",
+    "phonics": "/ˈplæt.fɔːrm/",
+    "hint": "在黃線後面排隊等候列車進站的高起候車台",
+    "image": "images/platform.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_track",
+    "word": "TRACK",
+    "category": "transit",
+    "translation": "鐵軌 / 軌道",
+    "phonics": "/træk/",
+    "hint": "兩條長長平行的鋼軌，火車輪子在上面跑",
+    "image": "images/track.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_tunnel",
+    "word": "TUNNEL",
+    "category": "transit",
+    "translation": "隧道",
+    "phonics": "/ˈtʌn.əl/",
+    "hint": "穿過山丘或地下讓列車通行的長長通道",
+    "image": "images/tunnel.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&q=80"
+  },
+  {
+    "id": "tr_bridge",
+    "word": "BRIDGE",
+    "category": "transit",
+    "translation": "橋樑 / 高架橋",
+    "phonics": "/brɪdʒ/",
+    "hint": "橫跨河流或馬路讓高架捷運通過的橋",
+    "image": "images/bridge.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80"
+  },
+  {
+    "id": "tr_depot",
+    "word": "DEPOT",
+    "category": "transit",
+    "translation": "車廠 / 維修廠",
+    "phonics": "/ˈdiː.poʊ/",
+    "hint": "列車保養維修與夜晚停放的大基地",
+    "image": "images/depot.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_gate",
+    "word": "GATE",
+    "category": "transit",
+    "translation": "驗票閘門",
+    "phonics": "/ɡeɪt/",
+    "hint": "嗶卡或投幣後會開門讓乘客進出的檢票閘門",
+    "image": "images/gate.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_entrance",
+    "word": "ENTRANCE",
+    "category": "transit",
+    "translation": "入口",
+    "phonics": "/ˈen.trəns/",
+    "hint": "走進車站或建築物的大門入口",
+    "image": "images/entrance.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_exit",
+    "word": "EXIT",
+    "category": "transit",
+    "translation": "出口",
+    "phonics": "/ˈek.sɪt/",
+    "hint": "走出捷運站到地面街頭的出口指標",
+    "image": "images/exit.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_stairs",
+    "word": "STAIRS",
+    "category": "transit",
+    "translation": "樓梯",
+    "phonics": "/sterz/",
+    "hint": "一階一階通往月台或出口的步梯",
+    "image": "images/stairs.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80"
+  },
+  {
+    "id": "tr_elevator",
+    "word": "ELEVATOR",
+    "category": "transit",
+    "translation": "電梯 / 升降機",
+    "phonics": "/ˈel.ə.veɪ.t̬ɚ/",
+    "hint": "推嬰兒車或帶大行李搭乘的直升廂型電梯",
+    "image": "images/elevator.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_escalator",
+    "word": "ESCALATOR",
+    "category": "transit",
+    "translation": "電扶梯",
+    "phonics": "/ˈes.kə.leɪ.t̬ɚ/",
+    "hint": "自動上下運轉站穩握緊扶手的電動階梯",
+    "image": "images/escalator.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_shelter",
+    "word": "SHELTER",
+    "category": "transit",
+    "translation": "候車亭 / 避雨棚",
+    "phonics": "/ˈʃel.t̬ɚ/",
+    "hint": "公車站牌旁擋風遮雨又遮陽的小亭子",
+    "image": "images/shelter.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1557223562-6c77ef16210f?w=400&q=80"
+  },
+  {
+    "id": "tr_bench",
+    "word": "BENCH",
+    "category": "transit",
+    "translation": "長椅",
+    "phonics": "/bentʃ/",
+    "hint": "在月台或站牌旁讓候車乘客坐下休息的木椅",
+    "image": "images/bench.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503602642458-232111445657?w=400&q=80"
+  },
+  {
+    "id": "tr_booth",
+    "word": "BOOTH",
+    "category": "transit",
+    "translation": "售票亭 / 服務台",
+    "phonics": "/buːθ/",
+    "hint": "站內站務人員為旅客解決問題的服務台",
+    "image": "images/booth.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_clock",
+    "word": "CLOCK",
+    "category": "transit",
+    "translation": "時鐘",
+    "phonics": "/klɑːk/",
+    "hint": "懸掛在月台上方顯示準確時間的大時鐘",
+    "image": "images/clock.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_screen",
+    "word": "SCREEN",
+    "category": "transit",
+    "translation": "資訊螢幕",
+    "phonics": "/skriːn/",
+    "hint": "顯示列車還有幾分鐘進站的電子顯示螢幕",
+    "image": "images/screen.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_sign",
+    "word": "SIGN",
+    "category": "transit",
+    "translation": "指示牌 / 標誌",
+    "phonics": "/saɪn/",
+    "hint": "標明方向、出口與站名引導乘客的看板",
+    "image": "images/sign.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_ticket",
+    "word": "TICKET",
+    "category": "transit",
+    "translation": "車票",
+    "phonics": "/ˈtɪk.ɪt/",
+    "hint": "搭乘火車或客運必備的乘車憑證",
+    "image": "images/ticket.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80"
+  },
+  {
+    "id": "tr_card",
+    "word": "CARD",
+    "category": "transit",
+    "translation": "悠遊卡 / 乘車卡",
+    "phonics": "/kɑːrd/",
+    "hint": "在驗票機嗶一聲感應扣款過閘門的卡片",
+    "image": "images/card.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_fare",
+    "word": "FARE",
+    "category": "transit",
+    "translation": "車資 / 票價",
+    "phonics": "/fer/",
+    "hint": "搭乘大眾交通工具需要支付的費用",
+    "image": "images/fare.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_token",
+    "word": "TOKEN",
+    "category": "transit",
+    "translation": "單程代幣",
+    "phonics": "/ˈtoʊ.kən/",
+    "hint": "圓形塑膠感應晶片單程車票",
+    "image": "images/token.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_pass",
+    "word": "PASS",
+    "category": "transit",
+    "translation": "定期票 / 通行證",
+    "phonics": "/pæs/",
+    "hint": "可以在三十天內無限搭乘的月票或觀光周遊券",
+    "image": "images/pass.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_price",
+    "word": "PRICE",
+    "category": "transit",
+    "translation": "價格",
+    "phonics": "/praɪs/",
+    "hint": "買車票或加值時需要支付的金額",
+    "image": "images/price.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_coin",
+    "word": "COIN",
+    "category": "transit",
+    "translation": "硬幣",
+    "phonics": "/kɔɪn/",
+    "hint": "投進自動售票機或公車投幣箱的銅板",
+    "image": "images/coin.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_cash",
+    "word": "CASH",
+    "category": "transit",
+    "translation": "現金",
+    "phonics": "/kæʃ/",
+    "hint": "用紙鈔或銅板實體支付車資",
+    "image": "images/cash.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_money",
+    "word": "MONEY",
+    "category": "transit",
+    "translation": "金錢",
+    "phonics": "/ˈmʌn.i/",
+    "hint": "用來支付交通搭乘費用的錢財",
+    "image": "images/money.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_machine",
+    "word": "MACHINE",
+    "category": "transit",
+    "translation": "售票機 / 加值機",
+    "phonics": "/məˈʃiːn/",
+    "hint": "可以自己點選站名買票加值票卡的自動機器",
+    "image": "images/machine.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80"
+  },
+  {
+    "id": "tr_scan",
+    "word": "SCAN",
+    "category": "transit",
+    "translation": "掃描",
+    "phonics": "/skæn/",
+    "hint": "用手機螢幕條碼在閘門感應器前掃描通關",
+    "image": "images/scan.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_tap",
+    "word": "TAP",
+    "category": "transit",
+    "translation": "感應 / 輕觸",
+    "phonics": "/tæp/",
+    "hint": "將卡片輕輕貼在驗票機嗶一聲過卡",
+    "image": "images/tap.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_swipe",
+    "word": "SWIPE",
+    "category": "transit",
+    "translation": "刷卡",
+    "phonics": "/swaɪp/",
+    "hint": "將磁條卡或感應卡在刷卡槽感應通過",
+    "image": "images/swipe.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_pay",
+    "word": "PAY",
+    "category": "transit",
+    "translation": "付款",
+    "phonics": "/peɪ/",
+    "hint": "繳交乘車所需的車資或車票錢",
+    "image": "images/pay.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_cost",
+    "word": "COST",
+    "category": "transit",
+    "translation": "花費",
+    "phonics": "/kɑːst/",
+    "hint": "這趟捷運或火車旅程需要花費多少錢",
+    "image": "images/cost.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_discount",
+    "word": "DISCOUNT",
+    "category": "transit",
+    "translation": "折扣 / 優待票",
+    "phonics": "/ˈdɪs.kaʊnt/",
+    "hint": "學生或小朋友搭車能享受的減價優惠",
+    "image": "images/discount.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&q=80"
+  },
+  {
+    "id": "tr_refund",
+    "word": "REFUND",
+    "category": "transit",
+    "translation": "退票 / 退費",
+    "phonics": "/ˈriː.fʌnd/",
+    "hint": "行程取消時將未使用的車票退回現金",
+    "image": "images/refund.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_free",
+    "word": "FREE",
+    "category": "transit",
+    "translation": "免費的",
+    "phonics": "/friː/",
+    "hint": "某些特定節日或身高未滿的小朋友搭車免收費",
+    "image": "images/free.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80"
+  },
+  {
+    "id": "tr_map",
+    "word": "MAP",
+    "category": "transit",
+    "translation": "路線圖 / 地圖",
+    "phonics": "/mæp/",
+    "hint": "標示各站站名與轉乘路線的捷運地圖",
+    "image": "images/map.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_line",
+    "word": "LINE",
+    "category": "transit",
+    "translation": "路線 / 捷運線",
+    "phonics": "/laɪn/",
+    "hint": "像紅線、藍線、綠線一樣特定顏色的行駛路線",
+    "image": "images/line.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_route",
+    "word": "ROUTE",
+    "category": "transit",
+    "translation": "行車路線",
+    "phonics": "/ruːt/",
+    "hint": "公車從第一站到最後一站所經過的道路軌跡",
+    "image": "images/route.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_transfer",
+    "word": "TRANSFER",
+    "category": "transit",
+    "translation": "轉乘 / 換車",
+    "phonics": "/ˈtræns.fɝː/",
+    "hint": "從紅線換到藍線，或從公車換搭捷運",
+    "image": "images/transfer.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_timetable",
+    "word": "TIMETABLE",
+    "category": "transit",
+    "translation": "時刻表",
+    "phonics": "/ˈtaɪmˌteɪ.bəl/",
+    "hint": "清楚列出每一班火車幾點幾分到站的時間表",
+    "image": "images/timetable.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_schedule",
+    "word": "SCHEDULE",
+    "category": "transit",
+    "translation": "班次表 / 日程",
+    "phonics": "/ˈskedʒ.uːl/",
+    "hint": "大眾交通工具每天固定的出發發車時間規畫",
+    "image": "images/schedule.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_direction",
+    "word": "DIRECTION",
+    "category": "transit",
+    "translation": "行車方向",
+    "phonics": "/daɪˈrek.ʃən/",
+    "hint": "列車開往淡水還是象山的方向指標",
+    "image": "images/direction.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_north",
+    "word": "NORTH",
+    "category": "transit",
+    "translation": "向北 / 北端",
+    "phonics": "/nɔːrθ/",
+    "hint": "指引列車往北方行駛的方向",
+    "image": "images/north.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_south",
+    "word": "SOUTH",
+    "category": "transit",
+    "translation": "向南 / 南端",
+    "phonics": "/saʊθ/",
+    "hint": "指引列車往南方行駛的方向",
+    "image": "images/south.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_east",
+    "word": "EAST",
+    "category": "transit",
+    "translation": "向東",
+    "phonics": "/iːst/",
+    "hint": "太陽升起、列車開往東部花蓮的方向",
+    "image": "images/east.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_west",
+    "word": "WEST",
+    "category": "transit",
+    "translation": "向西",
+    "phonics": "/west/",
+    "hint": "太陽西下、列車開往西部的方向",
+    "image": "images/west.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_bound",
+    "word": "BOUND",
+    "category": "transit",
+    "translation": "開往...的",
+    "phonics": "/baʊnd/",
+    "hint": "表示列車開往的目的地 (Northbound 往北行)",
+    "image": "images/bound.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&q=80"
+  },
+  {
+    "id": "tr_delay",
+    "word": "DELAY",
+    "category": "transit",
+    "translation": "延誤 / 誤點",
+    "phonics": "/dɪˈleɪ/",
+    "hint": "因為下大雨或事故導致列車比預定時間慢到",
+    "image": "images/delay.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  },
+  {
+    "id": "tr_arrive",
+    "word": "ARRIVE",
+    "category": "transit",
+    "translation": "抵達 / 到站",
+    "phonics": "/əˈraɪv/",
+    "hint": "列車平安順利進站到達目的地",
+    "image": "images/arrive.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_depart",
+    "word": "DEPART",
+    "category": "transit",
+    "translation": "出發 / 發車",
+    "phonics": "/dɪˈpɑːrt/",
+    "hint": "列車關上車門開離車站出發踏上旅程",
+    "image": "images/depart.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_trip",
+    "word": "TRIP",
+    "category": "transit",
+    "translation": "旅程 / 趟",
+    "phonics": "/trɪp/",
+    "hint": "搭乘交通工具前往某處的一趟美好小旅行",
+    "image": "images/trip.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&q=80"
+  },
+  {
+    "id": "tr_journey",
+    "word": "JOURNEY",
+    "category": "transit",
+    "translation": "旅行 / 行程",
+    "phonics": "/ˈdʒɜːr.ni/",
+    "hint": "搭著火車沿路欣賞風景的長途旅行",
+    "image": "images/journey.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&q=80"
+  },
+  {
+    "id": "tr_driver",
+    "word": "DRIVER",
+    "category": "transit",
+    "translation": "司機 / 駕駛員",
+    "phonics": "/ˈdraɪ.vər/",
+    "hint": "手握方向盤或操縱桿平穩開車的專業人員",
+    "image": "images/driver.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1508974239320-0a029497e820?w=400&q=80"
+  },
+  {
+    "id": "tr_passenger",
+    "word": "PASSENGER",
+    "category": "transit",
+    "translation": "乘客 / 旅客",
+    "phonics": "/ˈpæs.ən.dʒɚ/",
+    "hint": "買票搭乘公車、火車或捷運的每個人",
+    "image": "images/passenger.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_conductor",
+    "word": "CONDUCTOR",
+    "category": "transit",
+    "translation": "列車長 / 車長",
+    "phonics": "/kənˈdʌk.tɚ/",
+    "hint": "在火車車廂巡視、查驗車票並維護乘車安全的主管",
+    "image": "images/conductor.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1508974239320-0a029497e820?w=400&q=80"
+  },
+  {
+    "id": "tr_commuter",
+    "word": "COMMUTER",
+    "category": "transit",
+    "translation": "通勤族",
+    "phonics": "/kəˈmjuː.t̬ɚ/",
+    "hint": "每天固定搭捷運或公車上下學、上下班的人",
+    "image": "images/commuter.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_tourist",
+    "word": "TOURIST",
+    "category": "transit",
+    "translation": "遊客 / 觀光客",
+    "phonics": "/ˈtʊr.ɪst/",
+    "hint": "搭乘大眾交通工具四處拍照旅遊的外地旅客",
+    "image": "images/tourist.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&q=80"
+  },
+  {
+    "id": "tr_child",
+    "word": "CHILD",
+    "category": "transit",
+    "translation": "兒童 / 小孩",
+    "phonics": "/tʃaɪld/",
+    "hint": "和爸爸媽媽一起搭車的快樂小學生",
+    "image": "images/child.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=400&q=80"
+  },
+  {
+    "id": "tr_adult",
+    "word": "ADULT",
+    "category": "transit",
+    "translation": "成人 / 大人",
+    "phonics": "/ˈæd.ʌlt/",
+    "hint": "年滿十八歲買全票的大人乘客",
+    "image": "images/adult.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80"
+  },
+  {
+    "id": "tr_senior",
+    "word": "SENIOR",
+    "category": "transit",
+    "translation": "長者 / 敬老乘客",
+    "phonics": "/ˈsiː.njɚ/",
+    "hint": "我們在公車捷運上要主動讓座的年長爺爺奶奶",
+    "image": "images/senior.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80"
+  },
+  {
+    "id": "tr_guard",
+    "word": "GUARD",
+    "category": "transit",
+    "translation": "站務員 / 警衛",
+    "phonics": "/ɡɑːrd/",
+    "hint": "在月台吹哨、維護秩序與協助乘客安全的工作人員",
+    "image": "images/guard.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1508974239320-0a029497e820?w=400&q=80"
+  },
+  {
+    "id": "tr_crowd",
+    "word": "CROWD",
+    "category": "transit",
+    "translation": "人群 / 人潮",
+    "phonics": "/kraʊd/",
+    "hint": "上下班高峰時間月台與車廂內擠滿的人潮",
+    "image": "images/crowd.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_seat",
+    "word": "SEAT",
+    "category": "transit",
+    "translation": "座位",
+    "phonics": "/siːt/",
+    "hint": "車廂裡讓乘客坐著休息的舒適椅子",
+    "image": "images/seat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503602642458-232111445657?w=400&q=80"
+  },
+  {
+    "id": "tr_priority",
+    "word": "PRIORITY",
+    "category": "transit",
+    "translation": "博愛座 / 優先",
+    "phonics": "/praɪˈɔːr.ə.t̬i/",
+    "hint": "深藍色專門禮讓孕婦、老人與行動不便者的愛心座位",
+    "image": "images/priority.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1503602642458-232111445657?w=400&q=80"
+  },
+  {
+    "id": "tr_door",
+    "word": "DOOR",
+    "category": "transit",
+    "translation": "車門",
+    "phonics": "/dɔːr/",
+    "hint": "到站時會打開，關閉時要小心不要被夾到",
+    "image": "images/door.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80"
+  },
+  {
+    "id": "tr_window",
+    "word": "WINDOW",
+    "category": "transit",
+    "translation": "車窗",
+    "phonics": "/ˈwɪn.doʊ/",
+    "hint": "透明明亮可以向外眺望沿途美麗風景的玻璃窗",
+    "image": "images/window.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80"
+  },
+  {
+    "id": "tr_bell",
+    "word": "BELL",
+    "category": "transit",
+    "translation": "下車鈴",
+    "phonics": "/bel/",
+    "hint": "快到站時按下會發出叮咚聲提醒司機的按鈕",
+    "image": "images/bell.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&q=80"
+  },
+  {
+    "id": "tr_handle",
+    "word": "HANDLE",
+    "category": "transit",
+    "translation": "手把 / 扶手",
+    "phonics": "/ˈhæn.dəl/",
+    "hint": "站立時可以握緊維持身體平衡的橫桿把手",
+    "image": "images/handle.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_strap",
+    "word": "STRAP",
+    "category": "transit",
+    "translation": "吊環 / 拉帶",
+    "phonics": "/stræp/",
+    "hint": "車廂天花板垂吊下來讓人抓緊防跌倒的三角形拉環",
+    "image": "images/strap.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_pole",
+    "word": "POLE",
+    "category": "transit",
+    "translation": "立柱 / 扶手桿",
+    "phonics": "/poʊl/",
+    "hint": "直立在車廂中間讓站立乘客扶穩的金屬圓柱",
+    "image": "images/pole.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_aisle",
+    "word": "AISLE",
+    "category": "transit",
+    "translation": "車廂走道",
+    "phonics": "/aɪl/",
+    "hint": "兩排座位中間讓乘客排隊通過的中央走道",
+    "image": "images/aisle.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400&q=80"
+  },
+  {
+    "id": "tr_luggage",
+    "word": "LUGGAGE",
+    "category": "transit",
+    "translation": "行李箱 / 行李",
+    "phonics": "/ˈlʌɡ.ɪdʒ/",
+    "hint": "出國或遠足時拖著的大型行李箱",
+    "image": "images/luggage.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_bag",
+    "word": "BAG",
+    "category": "transit",
+    "translation": "背包 / 提袋",
+    "phonics": "/bæɡ/",
+    "hint": "搭車時後背包最好改手提避免碰撞其他乘客",
+    "image": "images/bag.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"
+  },
+  {
+    "id": "tr_ring",
+    "word": "RING",
+    "category": "transit",
+    "translation": "鈴響 / 按鈴",
+    "phonics": "/rɪŋ/",
+    "hint": "按壓下車鈴發出清脆響聲通知司機停靠",
+    "image": "images/ring.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&q=80"
+  },
+  {
+    "id": "tr_chime",
+    "word": "CHIME",
+    "category": "transit",
+    "translation": "提醒聲 / 提示音",
+    "phonics": "/tʃaɪm/",
+    "hint": "關門或即將到站時廣播播出的優美提醒音樂",
+    "image": "images/chime.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&q=80"
+  },
+  {
+    "id": "tr_horn",
+    "word": "HORN",
+    "category": "transit",
+    "translation": "喇叭",
+    "phonics": "/hɔːrn/",
+    "hint": "司機遇到緊急狀況時鳴笛示警的鳴笛聲",
+    "image": "images/horn.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400&q=80"
+  },
+  {
+    "id": "tr_wheel",
+    "word": "WHEEL",
+    "category": "transit",
+    "translation": "車輪",
+    "phonics": "/wiːl/",
+    "hint": "公車的大黑輪胎或火車的堅固鋼輪",
+    "image": "images/wheel.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&q=80"
+  },
+  {
+    "id": "tr_brake",
+    "word": "BRAKE",
+    "category": "transit",
+    "translation": "煞車",
+    "phonics": "/breɪk/",
+    "hint": "讓行駛中的列車或公車平穩減速停下來的裝置",
+    "image": "images/brake.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_engine",
+    "word": "ENGINE",
+    "category": "transit",
+    "translation": "引擎 / 火車頭",
+    "phonics": "/ˈen.dʒɪn/",
+    "hint": "產生強大動力帶動整列火車前進的發動機",
+    "image": "images/engine.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=400&q=80"
+  },
+  {
+    "id": "tr_safety",
+    "word": "SAFETY",
+    "category": "transit",
+    "translation": "安全 / 平安",
+    "phonics": "/ˈseɪf.ti/",
+    "hint": "搭乘大眾交通工具最重要、永遠擺第一的原則",
+    "image": "images/safety.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80"
+  }
+];
+
+    // ==========================================
+    // 2. 原生音效合成器 (Web Audio API)
+    // ==========================================
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playPop() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
+      }
+      playRemove() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(260, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
+      }
+      playSuccess() {
+        try {
+          this.init();
+          const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            const startTime = this.ctx.currentTime + idx * 0.1;
+            gain.gain.setValueAtTime(0.3, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.35);
+          });
+        } catch (e) {}
+      }
+      playTryAgain() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(240, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
+      }
+    }
+    const sfx = new SoundFX();
+
+    // ==========================================
+    // 3. 原生全螢幕彩色灑花特效 (零外掛依賴)
+    // ==========================================
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: canvas.width * (0.2 + Math.random() * 0.6),
+          y: canvas.height * 0.5,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.8) * 18,
+          size: 6 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 12,
+          gravity: 0.45,
+          opacity: 1
+        });
+      }
+
+      let frame = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rotationSpeed;
+          p.opacity -= 0.009;
+
+          if (p.opacity > 0 && p.y < canvas.height) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        });
+
+        frame++;
+        if (alive && frame < 180) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      animate();
+    }
+
+    // 讚美與打氣文字庫
+    const PRAISES = [
+      { en: "Awesome job, {name}! You are a superstar!", zh: "太厲害了，{name}！你是超級大明星！🌟" },
+      { en: "Bingo! Fantastic spelling, {name}!", zh: "答對了！{name} 拼得太棒了！🎉" },
+      { en: "Brilliant! You did it, {name}!", zh: "太聰明了！{name} 成功了！🚀" },
+      { en: "High five, {name}! That was perfect!", zh: "來擊掌，{name}！太完美了！🙌" },
+      { en: "You're getting so good at this, {name}!", zh: "{name} 越來越厲害囉！✨" }
+    ];
+
+    const ENCOURAGEMENTS = [
+      { en: "Good try! Don't give up, let's try again!", zh: "差一點點就對了！別氣餒，我們再試一次！💪" },
+      { en: "Almost there! Take your time, you can do it!", zh: "就快成功了！慢慢來，你一定可以的！✨" },
+      { en: "That's okay! Practice makes perfect!", zh: "沒關係的！多練習就會越來越厲害喔！🌱" },
+      { en: "Keep going! Listen to the sound again!", zh: "再加油！聽聽發音再排一次看看！🎧" }
+    ];
+
+    // ==========================================
+    // 4. 主遊戲控制邏輯
+    // ==========================================
+    class SpellingApp {
+      constructor() {
+        this.allWords = [...initialWords];
+        this.currentCategory = 'grade3_ready';
+        this.isRandomOrder = true; // 預設啟用亂數隨機出題
+        this.currentUser = 'Tim';
+        this.profiles = this.loadProfiles();
+        this.words = this.getWordsByCategory(this.currentCategory);
+        this.currentIndex = 0;
+        
+        this.slots = [];
+        this.letterPool = [];
+        this.isSolved = false;
+        this.speechSequenceToken = 0;
+
+        this.cacheDom();
+        this.renderCategoryTabs();
+        this.bindEvents();
+        this.renderProfile();
+        this.loadWord(0);
+      }
+
+      // 依據是否為專有名詞決定大小寫（預設一般名詞一律使用小寫字母）
+      getDisplayWord(wordData) {
+        if (!wordData) return '';
+        if (wordData.isProperNoun) return wordData.word;
+        return wordData.word.toLowerCase();
+      }
+
+      // 開始或點擊聽發音時：唸一次英文、中文，再一次英文、中文，總共兩次
+      playBilingualTwice(word, translation, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const currentToken = ++this.speechSequenceToken;
+
+        // 第 1 次：英文
+        this.speak(word, 0.88, () => {
+          if (this.speechSequenceToken !== currentToken) return;
+          setTimeout(() => {
+            if (this.speechSequenceToken !== currentToken) return;
+            // 第 1 次：中文
+            this.speakZh(translation, () => {
+              if (this.speechSequenceToken !== currentToken) return;
+              setTimeout(() => {
+                if (this.speechSequenceToken !== currentToken) return;
+                // 第 2 次：英文
+                this.speak(word, 0.88, () => {
+                  if (this.speechSequenceToken !== currentToken) return;
+                  setTimeout(() => {
+                    if (this.speechSequenceToken !== currentToken) return;
+                    // 第 2 次：中文
+                    this.speakZh(translation, onEnd);
+                  }, 250);
+                });
+              }, 350);
+            });
+          }, 250);
+        });
+      }
+
+      // Fisher-Yates 隨機洗牌演算法
+      shuffleArray(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      getWordsByCategory(catId) {
+        let pool = (this.allWords || []).filter(w => w.category === catId);
+        if (pool.length === 0) pool = [...(this.allWords || [])];
+
+        const profiles = this.profiles || this.loadProfiles();
+        const user = this.currentUser || 'Tim';
+        const profile = (profiles && profiles[user]) ? profiles[user] : { completed: {} };
+        const completedMap = profile.completed || {};
+        const practiced = pool.filter(w => !!completedMap[w.id]);
+        const unpracticed = pool.filter(w => !completedMap[w.id]);
+
+        // 每次出題以 15 個單字為原則（以練習過的 10 個為主，搭配 5 個新的還沒練習過的）
+        let targetPracticed = Math.min(10, practiced.length);
+        let targetNew = Math.min(5, unpracticed.length);
+
+        // 如果練習過的不足 10 個，由未練習過的補足
+        if (targetPracticed < 10) {
+          const shortage = 10 - targetPracticed;
+          targetNew = Math.min(targetNew + shortage, unpracticed.length);
+        }
+
+        // 如果未練習過的不足 5 個，由已練習過的補足
+        if (targetNew < 5) {
+          const shortage = 5 - targetNew;
+          targetPracticed = Math.min(targetPracticed + shortage, practiced.length);
+        }
+
+        const shuffledPracticed = this.shuffleArray(practiced).slice(0, targetPracticed);
+        const shuffledUnpracticed = this.shuffleArray(unpracticed).slice(0, targetNew);
+
+        const combined = [...shuffledPracticed, ...shuffledUnpracticed];
+        return this.shuffleArray(combined);
+      }
+
+      shuffleCurrentQuestions() {
+        sfx.playPop();
+        this.words = this.getWordsByCategory(this.currentCategory);
+        this.currentIndex = 0;
+        this.loadWord(0);
+      }
+
+      loadProfiles() {
+        const saved = localStorage.getItem('tim_spelling_profile_v1');
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch (e) {}
+        }
+        return {
+          Tim: { name: 'Tim', avatar: '👦', stars: 0, completed: {}, history: [] }
+        };
+      }
+
+      saveProfiles() {
+        localStorage.setItem('tim_spelling_profile_v1', JSON.stringify(this.profiles));
+      }
+
+      cacheDom() {
+        this.dom = {
+          userTimBtn: document.getElementById('user-tim'),
+          
+          userStarsEl: document.getElementById('user-stars'),
+          currentUserNameEl: document.getElementById('current-user-name'),
+          statsModalBtn: document.getElementById('open-stats-btn'),
+          statsModal: document.getElementById('stats-modal'),
+          closeStatsBtn: document.getElementById('close-stats-btn'),
+          statsList: document.getElementById('stats-list'),
+          categoryTabs: document.getElementById('category-tabs'),
+          wordImg: document.getElementById('word-image'),
+          wordTranslation: document.getElementById('word-translation'),
+          wordPhonics: document.getElementById('word-phonics'),
+          wordHint: document.getElementById('word-hint'),
+          speakBtn: document.getElementById('speak-btn'),
+          speakSlowBtn: document.getElementById('speak-slow-btn'),
+          slotsContainer: document.getElementById('slots-container'),
+          lettersPoolContainer: document.getElementById('letters-pool'),
+          resetLettersBtn: document.getElementById('reset-letters-btn'),
+          hintBtn: document.getElementById('hint-btn'),
+          prevWordBtn: document.getElementById('prev-word-btn'),
+          nextWordBtn: document.getElementById('next-word-btn'),
+          shuffleWordsBtn: document.getElementById('shuffle-words-btn'),
+          wordCounter: document.getElementById('word-counter'),
+          feedbackCard: document.getElementById('feedback-card'),
+          feedbackEmoji: document.getElementById('feedback-emoji'),
+          feedbackTitle: document.getElementById('feedback-title'),
+          feedbackSubtitle: document.getElementById('feedback-subtitle'),
+          feedbackActionBtn: document.getElementById('feedback-action-btn'),
+          feedbackWordBox: document.getElementById('feedback-word-box'),
+          feedbackWordImg: document.getElementById('feedback-word-img'),
+          feedbackSpellingTiles: document.getElementById('feedback-spelling-tiles'),
+          feedbackWordText: document.getElementById('feedback-word-text'),
+          feedbackWordTranslation: document.getElementById('feedback-word-translation'),
+          feedbackWordPhonics: document.getElementById('feedback-word-phonics'),
+          feedbackBtnSpell: document.getElementById('feedback-btn-spell'),
+          feedbackBtnEn: document.getElementById('feedback-btn-en'),
+          feedbackBtnZh: document.getElementById('feedback-btn-zh')
+        };
+      }
+
+      renderCategoryTabs() {
+        if (!this.dom.categoryTabs) return;
+        this.dom.categoryTabs.innerHTML = '';
+
+        const profile = this.profiles[this.currentUser] || { completed: {} };
+
+        categories.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = this.currentCategory === cat.id;
+
+          const catWords = this.allWords.filter(w => w.category === cat.id);
+          const masteredCount = catWords.filter(w => !!profile.completed[w.id]).length;
+          const totalCount = catWords.length;
+
+          btn.className = `flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 ${
+            isActive 
+              ? 'bg-indigo-600 text-white shadow-md scale-105 ring-2 ring-indigo-300' 
+              : 'bg-white/85 hover:bg-white text-slate-600 shadow-sm border border-slate-200 hover:scale-102'
+          }`;
+
+          btn.innerHTML = `<span>${cat.icon}</span><span>${cat.name}</span><span class="text-[11px] sm:text-xs opacity-75 font-medium">(${masteredCount}/${totalCount})</span>`;
+          btn.addEventListener('click', () => {
+            sfx.playPop();
+            this.currentCategory = cat.id;
+            this.words = this.getWordsByCategory(this.currentCategory);
+            this.renderCategoryTabs();
+            this.currentIndex = 0;
+            this.loadWord(0);
+          });
+          this.dom.categoryTabs.appendChild(btn);
+        });
+      }
+
+      bindEvents() {
+        
+        
+
+        this.dom.speakBtn.addEventListener('click', () => {
+          sfx.playPop();
+          const w = this.getCurrentWord();
+          this.playBilingualTwice(w.word, w.translation);
+        });
+        this.dom.speakSlowBtn.addEventListener('click', () => this.speak(this.getCurrentWord().word, 0.55));
+
+        this.dom.resetLettersBtn.addEventListener('click', () => this.resetCurrentBoard());
+        this.dom.hintBtn.addEventListener('click', () => this.giveHint());
+        this.dom.prevWordBtn.addEventListener('click', () => this.prevWord());
+        this.dom.nextWordBtn.addEventListener('click', () => this.nextWord());
+        this.dom.shuffleWordsBtn?.addEventListener('click', () => this.shuffleCurrentQuestions());
+
+        this.dom.statsModalBtn.addEventListener('click', () => this.showStats());
+        this.dom.closeStatsBtn.addEventListener('click', () => this.hideStats());
+        this.dom.statsModal.addEventListener('click', (e) => {
+          if (e.target === this.dom.statsModal) this.hideStats();
+        });
+
+        // 答對複習按鈕群 (拼字、英文、中文發音)
+        this.dom.feedbackBtnSpell?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speakSpelling(this.getCurrentWord().word);
+        });
+        this.dom.feedbackBtnEn?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speak(this.getCurrentWord().word, 0.85);
+        });
+        this.dom.feedbackBtnZh?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speakZh(this.getCurrentWord().translation);
+        });
+
+        this.dom.feedbackActionBtn.addEventListener('click', () => {
+          window.speechSynthesis?.cancel();
+          this.speechSequenceToken++;
+          this.dom.feedbackCard.classList.add('hidden');
+          if (this.isSolved) {
+            if (this.currentCategory === 'unlearned') {
+              this.words = this.getWordsByCategory('unlearned');
+              this.renderCategoryTabs();
+              if (this.words.length === 0) {
+                this.loadWord(0);
+                return;
+              }
+              if (this.currentIndex >= this.words.length) {
+                this.currentIndex = 0;
+              }
+              this.loadWord(this.currentIndex);
+            } else {
+              this.nextWord();
+            }
+          }
+        });
+      }
+
+      switchUser(user) {
+        sfx.playPop();
+        this.currentUser = user;
+        this.renderProfile();
+        this.words = this.getWordsByCategory(this.currentCategory);
+        this.renderCategoryTabs();
+        this.loadWord(0);
+      }
+
+      renderProfile() {
+        const profile = this.profiles[this.currentUser] || { name: 'Tim', stars: 0 };
+        if (this.dom.currentUserNameEl) this.dom.currentUserNameEl.textContent = profile.name;
+        if (this.dom.userStarsEl) this.dom.userStarsEl.textContent = profile.stars;
+      }
+
+      getCurrentWord() {
+        return this.words[this.currentIndex] || this.words[0];
+      }
+
+      renderAllDoneState() {
+        this.currentIndex = 0;
+        this.isSolved = true;
+        this.dom.wordTranslation.textContent = "全部學會了！";
+        this.dom.wordPhonics.textContent = "Great Job! 🌟";
+        this.dom.wordHint.textContent = `太強了！${this.currentUser} 已經掌握全部單字！可以選其他單元自由複習喔！`;
+        this.dom.wordCounter.textContent = `0 / 0`;
+        this.dom.wordImg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="%23fef08a"/><path d="M50 18 L59 36 L79 39 L64 53 L68 73 L50 63 L32 73 L36 53 L21 39 L41 36 Z" fill="%23f59e0b"/><circle cx="50" cy="46" r="6" fill="%23fff"/></svg>`;
+        this.dom.slotsContainer.innerHTML = `<div class="text-indigo-700 font-extrabold text-sm sm:text-base bg-indigo-50 border border-indigo-200 px-5 py-3 rounded-2xl">🎉 太棒了！目前沒有尚未學過的單字囉！</div>`;
+        this.dom.lettersPoolContainer.innerHTML = `<div class="text-slate-400 font-bold text-xs sm:text-sm py-2">點選上方「🌈 全部單字」或其他分類隨時複習</div>`;
+        const completedBadge = document.getElementById('word-completed-badge');
+        if (completedBadge) completedBadge.classList.add('hidden');
+        launchConfetti();
+        this.speakZh(`太厲害了，${this.currentUser}！所有單字都已經學會了！`);
+      }
+
+      loadWord(index) {
+        if (!this.words || this.words.length === 0) {
+          this.renderAllDoneState();
+          return;
+        }
+        if (index < 0) index = this.words.length - 1;
+        if (index >= this.words.length) index = 0;
+        this.currentIndex = index;
+        this.isSolved = false;
+
+        const wordData = this.getCurrentWord();
+        const wordClean = this.getDisplayWord(wordData);
+
+        if (wordData.image && !wordData.image.startsWith('<svg') && !wordData.image.startsWith('data:')) {
+          const fallback = wordData.fallbackImage || '';
+          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
+        } else if (wordData.image && wordData.image.startsWith('data:image/svg+xml;utf8,')) {
+          this.dom.wordImg.innerHTML = decodeURIComponent(wordData.image.replace('data:image/svg+xml;utf8,', ''));
+        } else if (wordData.image && wordData.image.startsWith('<svg')) {
+          this.dom.wordImg.innerHTML = wordData.image;
+        } else if (wordData.image) {
+          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
+        }
+        this.dom.wordTranslation.textContent = wordData.translation;
+        this.dom.wordPhonics.textContent = wordData.phonics || '';
+        this.dom.wordHint.textContent = wordData.hint || '';
+        this.dom.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+        this.dom.feedbackCard.classList.add('hidden');
+
+        const isCompleted = !!this.profiles[this.currentUser].completed[wordData.id];
+        const completedBadge = document.getElementById('word-completed-badge');
+        if (completedBadge) {
+          completedBadge.classList.toggle('hidden', !isCompleted);
+        }
+
+        this.slots = new Array(wordClean.length).fill(null);
+
+        const chars = wordClean.split('');
+        const lettersWithId = chars.map((ch, idx) => ({ id: idx, char: ch, used: false }));
+        
+        let shuffled;
+        let attempts = 0;
+        do {
+          shuffled = [...lettersWithId].sort(() => Math.random() - 0.5);
+          attempts++;
+        } while (shuffled.map(l => l.char).join('') === wordClean && chars.length > 2 && attempts < 10);
+
+        this.letterPool = shuffled;
+        this.renderBoard();
+
+        setTimeout(() => {
+          this.playBilingualTwice(wordData.word, wordData.translation);
+        }, 300);
+      }
+
+      renderBoard() {
+        this.renderSlots();
+        this.renderPool();
+      }
+
+      renderSlots() {
+        this.dom.slotsContainer.innerHTML = '';
+        const isLong = this.slots.length > 6;
+        const sizeClass = isLong
+          ? "w-11 h-14 sm:w-13 sm:h-16 md:w-14 md:h-18 lg:w-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-black rounded-2xl"
+          : "w-13 h-16 sm:w-15 sm:h-18 md:w-16 md:h-20 lg:w-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black rounded-2xl sm:rounded-3xl";
+
+        this.slots.forEach((slotItem, slotIndex) => {
+          const slotEl = document.createElement('div');
+          slotEl.className = `${sizeClass} flex items-center justify-center font-black shadow-inner transition-all duration-200 cursor-pointer select-none ${
+            slotItem 
+              ? 'bg-amber-300 text-amber-950 border-3 sm:border-4 border-amber-400 shadow-md transform active:scale-95' 
+              : 'bg-white/85 border-3 sm:border-4 border-dashed border-sky-300 text-transparent hover:border-sky-400'
+          }`;
+          slotEl.dataset.slotIndex = slotIndex;
+
+          if (slotItem) {
+            slotEl.textContent = slotItem.char;
+            slotEl.addEventListener('click', () => {
+              if (this.isSolved) return;
+              this.removeLetterFromSlot(slotIndex);
+            });
+          } else {
+            slotEl.innerHTML = `<span class="text-sky-200 text-base sm:text-lg md:text-xl font-bold">${slotIndex + 1}</span>`;
+          }
+
+          slotEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            slotEl.classList.add('bg-amber-100', 'border-amber-400');
+          });
+          slotEl.addEventListener('dragleave', () => {
+            slotEl.classList.remove('bg-amber-100', 'border-amber-400');
+          });
+          slotEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            slotEl.classList.remove('bg-amber-100', 'border-amber-400');
+            const poolId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            if (!isNaN(poolId)) {
+              this.placeLetterInSlot(poolId, slotIndex);
+            }
+          });
+
+          this.dom.slotsContainer.appendChild(slotEl);
+        });
+      }
+
+      renderPool() {
+        this.dom.lettersPoolContainer.innerHTML = '';
+        const isLong = this.letterPool.length > 6;
+        const sizeClass = isLong
+          ? "w-11 h-14 sm:w-13 sm:h-16 md:w-14 md:h-18 lg:w-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-black rounded-2xl"
+          : "w-13 h-16 sm:w-15 sm:h-18 md:w-16 md:h-20 lg:w-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black rounded-2xl sm:rounded-3xl";
+
+        this.letterPool.forEach((item) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `${sizeClass} flex items-center justify-center font-black shadow-lg transition-all duration-200 select-none ${
+            item.used 
+              ? 'opacity-20 pointer-events-none bg-slate-200 border-2 border-slate-300 text-slate-400 scale-90' 
+              : 'bg-gradient-to-b from-sky-400 to-blue-500 text-white border-b-4 border-blue-700 active:border-b-0 active:translate-y-1 hover:scale-105 active:scale-95 cursor-grab'
+          }`;
+          card.textContent = item.char;
+          card.dataset.poolId = item.id;
+          card.draggable = !item.used && !this.isSolved;
+
+          card.addEventListener('click', () => {
+            if (item.used || this.isSolved) return;
+            const emptySlotIndex = this.slots.findIndex(s => s === null);
+            if (emptySlotIndex !== -1) {
+              this.placeLetterInSlot(item.id, emptySlotIndex);
+            } else {
+              sfx.playTryAgain();
+            }
+          });
+
+          card.addEventListener('dragstart', (e) => {
+            if (item.used || this.isSolved) {
+              e.preventDefault();
+              return;
+            }
+            e.dataTransfer.setData('text/plain', item.id.toString());
+            card.classList.add('opacity-50');
+          });
+
+          card.addEventListener('dragend', () => {
+            card.classList.remove('opacity-50');
+          });
+
+          this.dom.lettersPoolContainer.appendChild(card);
+        });
+      }
+
+      placeLetterInSlot(poolId, slotIndex) {
+        const poolItem = this.letterPool.find(l => l.id === poolId);
+        if (!poolItem || poolItem.used) return;
+
+        if (this.slots[slotIndex]) {
+          const oldPoolId = this.slots[slotIndex].poolId;
+          const oldPoolItem = this.letterPool.find(l => l.id === oldPoolId);
+          if (oldPoolItem) oldPoolItem.used = false;
+        }
+
+        poolItem.used = true;
+        this.slots[slotIndex] = { char: poolItem.char, poolId: poolItem.id };
+        sfx.playPop();
+
+        this.renderBoard();
+        this.checkIfComplete();
+      }
+
+      removeLetterFromSlot(slotIndex) {
+        const slotItem = this.slots[slotIndex];
+        if (!slotItem) return;
+
+        const poolItem = this.letterPool.find(l => l.id === slotItem.poolId);
+        if (poolItem) poolItem.used = false;
+
+        this.slots[slotIndex] = null;
+        sfx.playRemove();
+        this.renderBoard();
+      }
+
+      resetCurrentBoard() {
+        sfx.playRemove();
+        this.letterPool.forEach(l => l.used = false);
+        this.slots = new Array(this.getCurrentWord().word.length).fill(null);
+        this.renderBoard();
+      }
+
+      giveHint() {
+        if (this.isSolved) return;
+        const currentWord = this.getDisplayWord(this.getCurrentWord());
+        
+        for (let i = 0; i < currentWord.length; i++) {
+          const targetChar = currentWord[i];
+          const currentSlot = this.slots[i];
+
+          if (!currentSlot || currentSlot.char !== targetChar) {
+            if (currentSlot) {
+              this.removeLetterFromSlot(i);
+            }
+
+            let availablePoolItem = this.letterPool.find(l => l.char === targetChar && !l.used);
+            if (!availablePoolItem) {
+              const otherSlotIdx = this.slots.findIndex(s => s && s.char === targetChar);
+              if (otherSlotIdx !== -1) {
+                const borrowedPoolId = this.slots[otherSlotIdx].poolId;
+                this.slots[otherSlotIdx] = null;
+                availablePoolItem = this.letterPool.find(l => l.id === borrowedPoolId);
+                availablePoolItem.used = false;
+              }
+            }
+
+            if (availablePoolItem) {
+              this.placeLetterInSlot(availablePoolItem.id, i);
+              const slotElements = this.dom.slotsContainer.children;
+              if (slotElements[i]) {
+                slotElements[i].classList.add('ring-4', 'ring-emerald-400');
+                setTimeout(() => slotElements[i]?.classList.remove('ring-4', 'ring-emerald-400'), 800);
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      checkIfComplete() {
+        const isAllFilled = this.slots.every(s => s !== null);
+        if (!isAllFilled) return;
+
+        const currentWord = this.getDisplayWord(this.getCurrentWord());
+        const assembledWord = this.slots.map(s => s.char).join('');
+
+        if (assembledWord === currentWord) {
+          this.handleSuccess();
+        } else {
+          this.handleFailure();
+        }
+      }
+
+      handleSuccess() {
+        this.isSolved = true;
+        sfx.playSuccess();
+        launchConfetti();
+
+        const profile = this.profiles[this.currentUser];
+        const word = this.getCurrentWord();
+        const isFirstTime = !profile.completed[word.id];
+
+        if (isFirstTime) {
+          profile.stars += 1;
+          profile.completed[word.id] = {
+            date: new Date().toISOString(),
+            times: 1
+          };
+        } else {
+          profile.completed[word.id].times = (profile.completed[word.id].times || 1) + 1;
+        }
+        profile.history.push({
+          word: word.word,
+          success: true,
+          time: new Date().toLocaleTimeString()
+        });
+        this.saveProfiles();
+        this.renderProfile();
+        this.renderCategoryTabs();
+
+        const praiseTemplate = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+        const praiseEn = praiseTemplate.en.replace('{name}', this.currentUser);
+        const praiseZh = praiseTemplate.zh.replace('{name}', this.currentUser);
+
+        this.dom.feedbackEmoji.textContent = '🌟 🎉 🏆';
+        this.dom.feedbackTitle.textContent = praiseZh;
+        this.dom.feedbackSubtitle.textContent = praiseEn;
+        this.dom.feedbackActionBtn.textContent = '挑戰下一個單字 ➡️';
+
+        // 渲染單字強化複習區 (包含縮圖、正確拼字方塊、中文)
+        if (this.dom.feedbackWordBox) {
+          this.dom.feedbackWordBox.classList.remove('hidden');
+
+          // 注入縮圖
+          if (word.image && !word.image.startsWith('<svg') && !word.image.startsWith('data:')) {
+            const fallback = word.fallbackImage || '';
+            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-xl" />`;
+          } else if (word.image && word.image.startsWith('data:image/svg+xml;utf8,')) {
+            this.dom.feedbackWordImg.innerHTML = decodeURIComponent(word.image.replace('data:image/svg+xml;utf8,', ''));
+          } else if (word.image && word.image.startsWith('<svg')) {
+            this.dom.feedbackWordImg.innerHTML = word.image;
+          } else if (word.image) {
+            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" class="w-full h-full object-cover rounded-xl" />`;
+          }
+
+          // 正確字母拼字方塊（預設小寫）
+          const displayWord = this.getDisplayWord(word);
+          this.dom.feedbackSpellingTiles.innerHTML = displayWord.split('').map(char => `
+            <span class="inline-flex items-center justify-center w-7 h-8 sm:w-8 sm:h-9 rounded-lg bg-indigo-500 text-white font-black text-base sm:text-lg shadow-sm">${char}</span>
+          `).join('');
+
+          this.dom.feedbackWordText.textContent = displayWord;
+          this.dom.feedbackWordTranslation.textContent = word.translation;
+          this.dom.feedbackWordPhonics.textContent = word.phonics || '';
+        }
+
+        this.dom.feedbackCard.classList.remove('hidden');
+
+        // 自動循序語音引導：
+        // 1. 英文讚美 ("Awesome job, Tim!")
+        // 2. 拼字發音 ("c - a - p, cap!")
+        // 3. 中文發音 ("鴨舌帽")
+        const currentToken = ++this.speechSequenceToken;
+        setTimeout(() => {
+          if (this.speechSequenceToken !== currentToken) return;
+          this.speak(praiseEn, 0.95, () => {
+            if (this.speechSequenceToken !== currentToken) return;
+            setTimeout(() => {
+              if (this.speechSequenceToken !== currentToken) return;
+              this.speakSpelling(word.word, () => {
+                if (this.speechSequenceToken !== currentToken) return;
+                setTimeout(() => {
+                  if (this.speechSequenceToken !== currentToken) return;
+                  this.speakZh(word.translation);
+                }, 350);
+              });
+            }, 350);
+          });
+        }, 400);
+      }
+
+      handleFailure() {
+        sfx.playTryAgain();
+
+        this.dom.slotsContainer.classList.add('animate-shake');
+        setTimeout(() => {
+          this.dom.slotsContainer.classList.remove('animate-shake');
+        }, 600);
+
+        const profile = this.profiles[this.currentUser];
+        const word = this.getCurrentWord();
+        profile.history.push({
+          word: word.word,
+          success: false,
+          time: new Date().toLocaleTimeString()
+        });
+        this.saveProfiles();
+
+        // 答錯時隱藏複習面板，專心打氣重試
+        if (this.dom.feedbackWordBox) {
+          this.dom.feedbackWordBox.classList.add('hidden');
+        }
+
+        const enc = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+        this.dom.feedbackEmoji.textContent = '💪 ✨ 🌱';
+        this.dom.feedbackTitle.textContent = enc.zh;
+        this.dom.feedbackSubtitle.textContent = enc.en;
+        this.dom.feedbackActionBtn.textContent = '好，我再試一次！🔁';
+        this.dom.feedbackCard.classList.remove('hidden');
+
+        setTimeout(() => {
+          this.speak(enc.en, 0.9);
+        }, 300);
+      }
+
+      speak(text, rate = 0.9, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = rate;
+          utter.pitch = 1.05;
+          utter.lang = 'en-US';
+
+          const voices = window.speechSynthesis.getVoices();
+          const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google')));
+          if (naturalVoice) utter.voice = naturalVoice;
+
+          if (onEnd) utter.onend = onEnd;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {
+          if (onEnd) onEnd();
+        }
+      }
+
+      speakZh(text, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        try {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = 0.85;
+          utter.pitch = 1.05;
+          utter.lang = 'zh-TW';
+
+          const voices = window.speechSynthesis.getVoices();
+          const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.name.includes('Taiwan') || v.name.includes('Mei-Jia') || v.name.includes('Han'));
+          if (zhVoice) utter.voice = zhVoice;
+
+          if (onEnd) utter.onend = onEnd;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {
+          if (onEnd) onEnd();
+        }
+      }
+
+      speakSpelling(word, onEnd = null) {
+        // 拼字發音：將每個字母分開清晰朗讀，最後念出完整單字
+        const lettersSpelled = word.toUpperCase().split('').join(' , ');
+        this.speak(`${lettersSpelled} . ${word}`, 0.75, onEnd);
+      }
+
+      prevWord() {
+        sfx.playPop();
+        this.loadWord(this.currentIndex - 1);
+      }
+
+      nextWord() {
+        sfx.playPop();
+        let nextIdx = this.currentIndex + 1;
+        if (nextIdx >= this.words.length) {
+          // 當一輪 15 題挑戰結束時，自動依據最新熟練度重新抽籤（10 熟 + 5 新）
+          this.words = this.getWordsByCategory(this.currentCategory);
+          nextIdx = 0;
+        }
+        this.loadWord(nextIdx);
+      }
+
+      showStats() {
+        sfx.playPop();
+        const profile = this.profiles[this.currentUser];
+        const completedKeys = Object.keys(profile.completed);
+
+        let html = `
+          <div class="flex items-center gap-4 bg-amber-50 p-4 rounded-2xl mb-4 border border-amber-200">
+            <div class="text-5xl">${profile.avatar}</div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-800">${profile.name} 的成就單</h3>
+              <p class="text-amber-600 font-bold text-lg">累積獲得 ⭐ ${profile.stars} 顆星星</p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-slate-600">已掌握單字統計</h4>
+              <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">${completedKeys.length} / ${this.allWords.length} 個</span>
+            </div>
+            <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+        `;
+
+        categories.forEach(cat => {
+          const catWords = this.allWords.filter(w => w.category === cat.id);
+          const doneWords = catWords.filter(w => !!profile.completed[w.id]);
+          html += `
+            <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-200">
+              <div class="flex items-center justify-between text-xs font-black text-slate-700 mb-1.5 px-1">
+                <span>${cat.icon} ${cat.name}</span>
+                <span class="text-slate-500">${doneWords.length} / ${catWords.length}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+          `;
+          catWords.forEach(w => {
+            const isDone = !!profile.completed[w.id];
+            const count = isDone ? (profile.completed[w.id].times || 1) : 0;
+            html += `
+              <div class="flex items-center gap-1.5 p-1.5 rounded-lg border text-xs ${isDone ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800' : 'bg-white border-slate-200 text-slate-400 opacity-60'}">
+                <span>${isDone ? '✅' : '⚪'}</span>
+                <span class="font-extrabold">${this.getDisplayWord(w)}</span>
+                <span class="text-[10px] text-slate-500">${w.translation}</span>
+                ${isDone ? `<span class="ml-auto text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.2 rounded-full font-bold">x${count}</span>` : ''}
+              </div>
+            `;
+          });
+          html += `
+              </div>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+          <div class="text-center pt-2">
+            <button id="reset-user-progress-btn" class="text-xs text-red-400 hover:text-red-600 underline">重設 ${profile.name} 的歷史紀錄</button>
+          </div>
+        `;
+
+        this.dom.statsList.innerHTML = html;
+
+        document.getElementById('reset-user-progress-btn')?.addEventListener('click', () => {
+          if (confirm(`確定要將 ${profile.name} 的紀錄歸零重新開始嗎？`)) {
+            this.profiles[this.currentUser] = {
+              name: profile.name,
+              avatar: profile.avatar,
+              stars: 0,
+              completed: {},
+              history: []
+            };
+            this.saveProfiles();
+            this.renderProfile();
+            this.renderCategoryTabs();
+            this.showStats();
+          }
+        });
+
+        this.dom.statsModal.classList.remove('hidden');
+      }
+
+      hideStats() {
+        this.dom.statsModal.classList.add('hidden');
+      }
+    }
+
+    // 強化啟動邏輯，確保在任何環境下皆能立即初始化
+    function startApp() {
+      try {
+        window.app = new SpellingApp();
+      } catch (err) {
+        console.error("SpellingApp error:", err);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startApp);
+    } else {
+      startApp();
+    }
+  </script>
+</body>
+</html>
