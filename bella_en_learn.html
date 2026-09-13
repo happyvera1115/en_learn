@@ -1,0 +1,3462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Bella 的《大家說英語》9月份官方全真單字庫 | Bella's G8 English</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    .cursor-grab {
+      cursor: grab;
+    }
+    .cursor-grab:active {
+      cursor: grabbing;
+    }
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-rose-100 via-pink-100 to-indigo-100 min-h-screen lg:h-screen lg:max-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+  <!-- 灑花畫布 -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- 頂部導覽列：專屬標題與計星榜 -->
+  <header class="w-full max-w-6xl mx-auto px-3 py-1 flex items-center justify-between gap-2 flex-shrink-0">
+    <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full shadow-md border border-white/80">
+      <span class="text-xl">👧</span>
+      <span class="font-black text-xs sm:text-sm md:text-base text-pink-700">Bella 的《大家說英語》9月號官方單字庫</span>
+    </div>
+
+    <!-- 星星獎勵與戰績按鈕 -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 bg-amber-400 text-amber-950 px-3 py-1 rounded-full font-black text-xs sm:text-sm shadow-md">
+        <span>⭐</span>
+        <span id="user-stars">0</span>
+      </div>
+
+      <button id="open-stats-btn" title="查看進度與戰報" class="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-md border border-white transition-all hover:scale-105 active:scale-95 text-sm sm:text-base">
+        🏆
+      </button>
+    </div>
+  </header>
+
+  <!-- 頂部雙層選單 -->
+  <!-- 第 1 層：週次切換 (第1週 9/1~4、第2週 9/7~11、第3週 9/14~18、第4週 9/21~25、第5週 9/28~30) -->
+  <nav class="w-full max-w-6xl mx-auto px-2 pt-0.5 pb-1 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap flex-shrink-0" id="week-tabs">
+    <!-- 動態生成週次按鈕 -->
+  </nav>
+
+  <!-- 第 2 層：天數切換 (依選中週次顯示實際日期天數 + 整週總複習 + 尚未學過) -->
+  <nav class="w-full max-w-6xl mx-auto px-2 py-0.5 flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap flex-shrink-0" id="day-tabs">
+    <!-- 動態生成天數按鈕 -->
+  </nav>
+
+  <!-- 主遊戲畫面 (大幅放大中央卡片、圖片與文字排版，完美適配平板橫向大螢幕) -->
+  <main class="w-full max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-1.5 sm:py-2.5 flex-1 flex flex-col justify-center min-h-0">
+    
+    <!-- 題目主卡片 (橫向雙欄加寬加高) -->
+    <div class="w-full bg-white/95 backdrop-blur-lg rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl border-4 border-white/90 relative flex flex-col md:flex-row items-center md:items-stretch gap-4 md:gap-7">
+      
+      <!-- 已學會標籤 -->
+      <div id="word-completed-badge" class="hidden absolute top-3 right-3 sm:top-4 sm:right-4 bg-emerald-500 text-white text-xs sm:text-sm font-black px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 z-10">
+        <span>🎉</span> 已學會
+      </div>
+
+      <!-- 左側：圖片與單字基本資訊 (放大圖片與字體) -->
+      <div class="w-full md:w-5/12 lg:w-4/12 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-2xl bg-amber-50/75 border border-amber-200/80">
+        <!-- 圖片容器 (從原本 36 放大到 48/56，平板上一目了然) -->
+        <div class="relative w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-52 lg:h-52 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl p-2 shadow-inner border-2 border-amber-200 flex items-center justify-center overflow-hidden animate-float mb-2">
+          <div id="word-image" class="w-full h-full flex items-center justify-center filter drop-shadow">
+            <!-- 圖片或 SVG -->
+          </div>
+        </div>
+
+        <!-- 中文、音標與單字發音按鈕 -->
+        <div class="flex flex-col items-center w-full">
+          <div class="flex items-baseline justify-center gap-2.5 mb-1 flex-wrap">
+            <h2 id="word-translation" class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 tracking-wide">帳單</h2>
+            <span id="word-phonics" class="text-sm sm:text-base font-medium text-slate-400">/bɪl/</span>
+          </div>
+          <p id="word-hint" class="text-slate-600 text-xs sm:text-sm lg:text-base mb-2 font-medium line-clamp-1">吃完飯服務生送來的費用清單</p>
+
+          <div class="flex items-center gap-2.5">
+            <button id="speak-btn" class="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition-all text-xs sm:text-sm lg:text-base">
+              <span class="text-base sm:text-lg">🔊</span>
+              <span>聽單字</span>
+            </button>
+            <button id="speak-slow-btn" class="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:scale-95 text-amber-950 font-extrabold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl shadow-md transition-all text-xs sm:text-sm lg:text-base" title="慢速朗讀">
+              <span class="text-base sm:text-lg">🐢</span>
+              <span>慢速</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：國二考卷句型 + 拼字槽 + 字母池 (加大間距與排版) -->
+      <div class="w-full md:w-7/12 lg:w-8/12 flex flex-col justify-between">
+        
+        <!-- 官方句型與文意線索區塊 (字體放大，例句更清晰醒目) -->
+        <div class="bg-gradient-to-r from-pink-50 via-rose-50 to-indigo-50 border-2 border-pink-200/90 rounded-2xl p-3 sm:p-3.5 mb-2 shadow-xs">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 sm:py-1 rounded-md bg-pink-600 text-white font-black text-xs sm:text-sm tracking-wider" id="word-note-badge">
+                官方課文句
+              </span>
+              <span class="text-xs sm:text-sm font-bold text-slate-600" id="word-note-text">
+                【9月1日大英核心字】
+              </span>
+            </div>
+            <button id="speak-sentence-btn" type="button" class="text-xs sm:text-sm font-black text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95">
+              <span>🎧</span> 聽整句朗讀
+            </button>
+          </div>
+          
+          <!-- 例句填空提示 -->
+          <div id="word-sentence-display" class="text-base sm:text-lg lg:text-xl font-bold text-slate-800 leading-relaxed font-sans mt-1">
+            How much was the <span class="bg-amber-200/90 text-amber-950 px-2.5 py-0.5 rounded-lg font-mono font-black border border-amber-300">b_____l</span> for dinner?
+          </div>
+        </div>
+
+        <!-- 拼字空格放置區 (Slots) -->
+        <div class="w-full flex items-center justify-center my-auto py-2 sm:py-3">
+          <div id="slots-container" class="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 min-h-[4.5rem] sm:min-h-[5rem]">
+            <!-- 動態生成插槽 -->
+          </div>
+        </div>
+
+        <!-- 亂序字母池 (Letters Pool) -->
+        <div class="w-full bg-slate-100/90 rounded-2xl p-3 sm:p-3.5 border-2 border-slate-200 mt-2">
+          <div class="flex items-center justify-between mb-1.5 px-1">
+            <span class="text-xs sm:text-sm font-black text-slate-500 uppercase tracking-wider">點擊字母排入空格</span>
+            <div class="flex items-center gap-2">
+              <button id="hint-btn" class="text-xs sm:text-sm font-bold text-amber-700 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-xs">
+                <span>💡</span> 首尾提示
+              </button>
+              <button id="reset-letters-btn" class="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-800 bg-white px-2.5 py-1 rounded-lg shadow-xs border border-slate-200 transition-colors flex items-center gap-1">
+                <span>🔄</span> 重排
+              </button>
+            </div>
+          </div>
+
+          <div id="letters-pool" class="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 min-h-[4rem] sm:min-h-[4.5rem]">
+            <!-- 動態生成亂序字母卡 -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 底部切換題目列 -->
+    <div class="flex items-center justify-between w-full max-w-xl mx-auto mt-2.5 sm:mt-3 px-2 gap-3 flex-shrink-0">
+      <button id="prev-word-btn" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        <span>⬅️</span> 上一題
+      </button>
+
+      <button id="shuffle-words-btn" type="button" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black px-4 sm:px-5 py-2 rounded-xl sm:rounded-2xl shadow-md transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        <span>🔀</span> 隨機洗牌
+      </button>
+
+      <div id="word-counter" class="text-slate-700 font-black text-xs sm:text-sm lg:text-base bg-white/90 px-3.5 py-1.5 rounded-full shadow-inner border border-slate-200">
+        1 / 5
+      </div>
+
+      <button id="next-word-btn" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
+        下一題 <span>➡️</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- 回饋浮層卡片 (成功讚美 / 全面複習 - 放大尺寸提升易讀性) -->
+  <div id="feedback-card" class="hidden fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-lg lg:max-w-xl w-full shadow-2xl border-4 border-amber-300 text-center transform">
+      <div id="feedback-emoji" class="text-4xl sm:text-5xl mb-1.5">🎉 🌟 👏</div>
+      <h3 id="feedback-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">太棒了，Bella！答對了！</h3>
+      <p id="feedback-subtitle" class="text-indigo-600 font-bold text-sm sm:text-base mb-3">Awesome job! You are a superstar!</p>
+      
+      <!-- 答對時的單字強化複習區 -->
+      <div id="feedback-word-box" class="my-3 p-4 bg-amber-50/95 rounded-2xl border-2 border-amber-200 text-left">
+        <div class="flex items-center gap-3.5 mb-2.5">
+          <div id="feedback-word-img" class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-2xl p-1.5 shadow-sm border border-amber-200 flex items-center justify-center flex-shrink-0">
+            <!-- 注入圖片 -->
+          </div>
+          <div class="flex-1 min-w-0">
+            <div id="feedback-spelling-tiles" class="flex flex-wrap gap-1.5 mb-1.5">
+              <!-- 動態字母方塊 -->
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span id="feedback-word-text" class="text-2xl sm:text-3xl font-black text-indigo-700 tracking-wider">bill</span>
+              <span id="feedback-word-translation" class="text-lg sm:text-xl font-bold text-slate-700">帳單</span>
+            </div>
+            <div id="feedback-word-phonics" class="text-xs sm:text-sm text-slate-400 font-medium">/bɪl/</div>
+          </div>
+        </div>
+
+        <!-- 完整例句複習 -->
+        <div id="feedback-complete-sentence" class="text-sm sm:text-base text-slate-800 font-medium bg-white/90 p-2.5 sm:p-3 rounded-xl border border-amber-100 mb-2.5 leading-relaxed">
+          How much was the bill for dinner?
+        </div>
+
+        <!-- 4 個發音按鈕：單字發音、例句朗讀、拼字發音、中文發音 -->
+        <div class="grid grid-cols-4 gap-2 pt-2.5 border-t border-amber-200">
+          <button id="feedback-btn-en" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-blue-700 font-extrabold text-xs sm:text-sm py-2 px-1 rounded-xl shadow-xs border border-blue-200 active:scale-95 transition-all">
+            <span>🔊</span> 單字
+          </button>
+          <button id="feedback-btn-sentence" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-indigo-700 font-extrabold text-xs sm:text-sm py-2 px-1 rounded-xl shadow-xs border border-indigo-200 active:scale-95 transition-all">
+            <span>🎧</span> 例句
+          </button>
+          <button id="feedback-btn-spell" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-purple-700 font-extrabold text-xs sm:text-sm py-2 px-1 rounded-xl shadow-xs border border-purple-200 active:scale-95 transition-all">
+            <span>🔤</span> 拼字
+          </button>
+          <button id="feedback-btn-zh" type="button" class="flex items-center justify-center gap-1 bg-white hover:bg-amber-100 text-emerald-700 font-extrabold text-xs sm:text-sm py-2 px-1 rounded-xl shadow-xs border border-emerald-200 active:scale-95 transition-all">
+            <span>🗣️</span> 中文
+          </button>
+        </div>
+      </div>
+
+      <button id="feedback-action-btn" class="w-full py-3 sm:py-3.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black text-lg sm:text-xl rounded-2xl shadow-lg transition-transform active:scale-95">
+        挑戰下一題 ➡️
+      </button>
+    </div>
+  </div>
+
+  <!-- 成績與學習紀錄彈窗 -->
+  <div id="stats-modal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-5 max-w-lg w-full shadow-2xl border-2 border-slate-100 max-h-[88vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+          <span>🏆</span> Bella 的《大家說英語》戰報
+        </h3>
+        <button id="close-stats-btn" class="text-slate-400 hover:text-slate-600 text-xl font-bold w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+          ✕
+        </button>
+      </div>
+
+      <div id="stats-list" class="flex-1 overflow-y-auto pr-1 text-sm space-y-3">
+        <!-- 動態填入各單元進度 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 頁尾宣告 -->
+  <footer class="w-full text-center py-1 text-xs text-slate-500 font-medium flex-shrink-0">
+    為 <span class="font-bold text-pink-600">Bella</span> 打造的《大家說英語》9月份官方全真單字複習系統 🎈
+  </footer>
+
+  <script>
+    // ==========================================
+    // 1. 單字題庫與週次資料庫 (100% 來自雜誌照片)
+    // ==========================================
+    const allWords = [
+  {
+    "id": "sep_01_bill",
+    "word": "BILL",
+    "partOfSpeech": "n",
+    "translation": "帳單",
+    "phonics": "/bɪl/",
+    "sentence": "How much was the b_____l for dinner?",
+    "clue": "b_____l",
+    "sentenceComplete": "How much was the bill for dinner?",
+    "hint": "吃完飯服務生送來的費用清單",
+    "note": "【考卷第1題】",
+    "image": "images/bill.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&q=80",
+    "week": "week1",
+    "day": "day1",
+    "date": "9/1",
+    "dayLabel": "9/1 (一)"
+  },
+  {
+    "id": "sep_01_treat",
+    "word": "TREATED",
+    "baseWord": "TREAT",
+    "partOfSpeech": "v",
+    "translation": "請客；款待 (過去式)",
+    "phonics": "/ˈtriː.t̬ɪd/",
+    "sentence": "Alex t_____ted us to lunch today.",
+    "clue": "t_____ted",
+    "sentenceComplete": "Alex treated us to lunch today.",
+    "hint": "原形為 treat，過去式加 ed 變 treated",
+    "note": "【考卷第2題・注意過去式】",
+    "image": "images/treat.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80",
+    "week": "week1",
+    "day": "day1",
+    "date": "9/1",
+    "dayLabel": "9/1 (一)"
+  },
+  {
+    "id": "sep_01_invite",
+    "word": "INVITED",
+    "baseWord": "INVITE",
+    "partOfSpeech": "v",
+    "translation": "邀請 (過去式)",
+    "phonics": "/ɪnˈvaɪ.t̬ɪd/",
+    "sentence": "Mandy i_____ed me to her party.",
+    "clue": "i_____ed",
+    "sentenceComplete": "Mandy invited me to her party.",
+    "hint": "原形為 invite，過去式加 d 變 invited",
+    "note": "【考卷第3題・注意過去式】",
+    "image": "images/invite.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400&q=80",
+    "week": "week1",
+    "day": "day1",
+    "date": "9/1",
+    "dayLabel": "9/1 (一)"
+  },
+  {
+    "id": "sep_01_split",
+    "word": "SPLIT",
+    "partOfSpeech": "v",
+    "translation": "分攤；分開",
+    "phonics": "/splɪt/",
+    "sentence": "Let's s_____t the work.",
+    "clue": "s_____t",
+    "sentenceComplete": "Let's split the work.",
+    "hint": "分攤分開 (Split the bill 各自付帳)",
+    "note": "【考卷第4題】",
+    "image": "images/split.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week1",
+    "day": "day1",
+    "date": "9/1",
+    "dayLabel": "9/1 (一)"
+  },
+  {
+    "id": "sep_01_restaurant",
+    "word": "RESTAURANT",
+    "partOfSpeech": "n",
+    "translation": "餐廳",
+    "phonics": "/ˈres.trɑːnt/",
+    "sentence": "Let's eat at a Chinese r_____t.",
+    "clue": "r_____t",
+    "sentenceComplete": "Let's eat at a Chinese restaurant.",
+    "hint": "供客人用餐的餐館",
+    "note": "【考卷第5題・拼字重點】",
+    "image": "images/restaurant.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80",
+    "week": "week1",
+    "day": "day1",
+    "date": "9/1",
+    "dayLabel": "9/1 (一)"
+  },
+  {
+    "id": "sep_02_owe",
+    "word": "OWE",
+    "partOfSpeech": "v",
+    "translation": "欠 (錢或人情)",
+    "phonics": "/oʊ/",
+    "sentence": "How much do I o_____e you for lunch?",
+    "clue": "o_____e",
+    "sentenceComplete": "How much do I owe you for lunch?",
+    "hint": "欠某人多少費用",
+    "note": "【考卷第6題】",
+    "image": "images/owe.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&q=80",
+    "week": "week1",
+    "day": "day2",
+    "date": "9/2",
+    "dayLabel": "9/2 (二)"
+  },
+  {
+    "id": "sep_02_cost",
+    "word": "COST",
+    "partOfSpeech": "v",
+    "translation": "價錢為；花費",
+    "phonics": "/kɑːst/",
+    "sentence": "The cup c_____t $10.",
+    "clue": "c_____t",
+    "sentenceComplete": "The cup cost $10.",
+    "hint": "三態同形，過去式依然是 cost",
+    "note": "【考卷第7題・三態同形】",
+    "image": "images/cost.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=400&q=80",
+    "week": "week1",
+    "day": "day2",
+    "date": "9/2",
+    "dayLabel": "9/2 (二)"
+  },
+  {
+    "id": "sep_02_couple",
+    "word": "COUPLE",
+    "partOfSpeech": "n",
+    "translation": "幾個；一對",
+    "phonics": "/ˈkʌp.əl/",
+    "sentence": "We can wait a c_____e of hours.",
+    "clue": "c_____e",
+    "sentenceComplete": "We can wait a couple of hours.",
+    "hint": "a couple of 意為兩三個或幾位",
+    "note": "【考卷第8題】",
+    "image": "images/couple.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week1",
+    "day": "day2",
+    "date": "9/2",
+    "dayLabel": "9/2 (二)"
+  },
+  {
+    "id": "sep_02_downtown",
+    "word": "DOWNTOWN",
+    "partOfSpeech": "adv",
+    "translation": "在市中心",
+    "phonics": "/ˌdaʊnˈtaʊn/",
+    "sentence": "They went shopping d_____n yesterday.",
+    "clue": "d_____n",
+    "sentenceComplete": "They went shopping downtown yesterday.",
+    "hint": "城市商業繁華的市中心",
+    "note": "【考卷第9題】",
+    "image": "images/downtown.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=400&q=80",
+    "week": "week1",
+    "day": "day2",
+    "date": "9/2",
+    "dayLabel": "9/2 (二)"
+  },
+  {
+    "id": "sep_02_choose",
+    "word": "CHOOSE",
+    "partOfSpeech": "v",
+    "translation": "選擇",
+    "phonics": "/tʃuːz/",
+    "sentence": "Can we c_____e another day?",
+    "clue": "c_____e",
+    "sentenceComplete": "Can we choose another day?",
+    "hint": "從眾多選項中選定",
+    "note": "【考卷第10題】",
+    "image": "images/choose.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "week": "week1",
+    "day": "day2",
+    "date": "9/2",
+    "dayLabel": "9/2 (二)"
+  },
+  {
+    "id": "sep_03_star",
+    "word": "STAR",
+    "partOfSpeech": "n",
+    "translation": "明星；星星",
+    "phonics": "/stɑːr/",
+    "sentence": "Did you meet a movie s_____r?",
+    "clue": "s_____r",
+    "sentenceComplete": "Did you meet a movie star?",
+    "hint": "電影巨星",
+    "note": "【考卷第11題】",
+    "image": "images/star.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=400&q=80",
+    "week": "week1",
+    "day": "day3",
+    "date": "9/3",
+    "dayLabel": "9/3 (三)"
+  },
+  {
+    "id": "sep_03_visit",
+    "word": "VISIT",
+    "partOfSpeech": "v",
+    "translation": "參觀；拜訪",
+    "phonics": "/ˈvɪz.ɪt/",
+    "sentence": "They plan to v_____t the national museum.",
+    "clue": "v_____t",
+    "sentenceComplete": "They plan to visit the national museum.",
+    "hint": "參觀名勝古蹟或拜訪朋友",
+    "note": "【考卷第12題】",
+    "image": "images/visit.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week1",
+    "day": "day3",
+    "date": "9/3",
+    "dayLabel": "9/3 (三)"
+  },
+  {
+    "id": "sep_03_finish",
+    "word": "FINISH",
+    "partOfSpeech": "v",
+    "translation": "完成",
+    "phonics": "/ˈfɪn.ɪʃ/",
+    "sentence": "When will you f_____h your work?",
+    "clue": "f_____h",
+    "sentenceComplete": "When will you finish your work?",
+    "hint": "結束或做好工作",
+    "note": "【考卷第13題】",
+    "image": "images/finish.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&q=80",
+    "week": "week1",
+    "day": "day3",
+    "date": "9/3",
+    "dayLabel": "9/3 (三)"
+  },
+  {
+    "id": "sep_03_cafe",
+    "word": "CAFE",
+    "partOfSpeech": "n",
+    "translation": "咖啡館",
+    "phonics": "/kæfˈeɪ/",
+    "sentence": "We had coffee in a small c_____é.",
+    "clue": "c_____é",
+    "sentenceComplete": "We had coffee in a small café.",
+    "hint": "法文原字為 café",
+    "note": "【考卷第14題】",
+    "image": "images/cafe.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&q=80",
+    "week": "week1",
+    "day": "day3",
+    "date": "9/3",
+    "dayLabel": "9/3 (三)"
+  },
+  {
+    "id": "sep_03_unique",
+    "word": "UNIQUE",
+    "partOfSpeech": "adj",
+    "translation": "獨特的",
+    "phonics": "/juːˈniːk/",
+    "sentence": "The houses here are so u_____e.",
+    "clue": "u_____e",
+    "sentenceComplete": "The houses here are so unique.",
+    "hint": "獨一無二非常特別",
+    "note": "【考卷第15題】",
+    "image": "images/unique.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80",
+    "week": "week1",
+    "day": "day3",
+    "date": "9/3",
+    "dayLabel": "9/3 (三)"
+  },
+  {
+    "id": "sep_04_costume",
+    "word": "COSTUME",
+    "partOfSpeech": "n",
+    "translation": "服裝；戲服",
+    "phonics": "/ˈkɑː.stuːm/",
+    "sentence": "He wore a funny c_____e to the party.",
+    "clue": "c_____e",
+    "sentenceComplete": "He wore a funny costume to the party.",
+    "hint": "派對或表演穿的特殊裝扮",
+    "note": "【考卷第16題】",
+    "image": "images/costume.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80",
+    "week": "week1",
+    "day": "day4",
+    "date": "9/4",
+    "dayLabel": "9/4 (四)"
+  },
+  {
+    "id": "sep_04_free",
+    "word": "FREE",
+    "partOfSpeech": "idiom",
+    "translation": "免費 (for free)",
+    "phonics": "/friː/",
+    "sentence": "Kids under 12 can enter for f_____e.",
+    "clue": "f_____e",
+    "sentenceComplete": "Kids under 12 can enter for free.",
+    "hint": "不需要付任何費用",
+    "note": "【考卷第17題】",
+    "image": "images/free.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&q=80",
+    "week": "week1",
+    "day": "day4",
+    "date": "9/4",
+    "dayLabel": "9/4 (四)"
+  },
+  {
+    "id": "sep_04_mall",
+    "word": "MALL",
+    "partOfSpeech": "n",
+    "translation": "購物中心",
+    "phonics": "/mɔːl/",
+    "sentence": "How many stores are in this m_____l?",
+    "clue": "m_____l",
+    "sentenceComplete": "How many stores are in this mall?",
+    "hint": "商場，注意不是 meal (一餐) 喔！",
+    "note": "【考卷第18題・⚠️Bella失分提醒：mall 是商場不是 meal】",
+    "image": "images/mall.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week1",
+    "day": "day4",
+    "date": "9/4",
+    "dayLabel": "9/4 (四)"
+  },
+  {
+    "id": "sep_04_total",
+    "word": "TOTAL",
+    "partOfSpeech": "n",
+    "translation": "總數",
+    "phonics": "/ˈtoʊ.t̬əl/",
+    "sentence": "What was the number of people in t_____l?",
+    "clue": "t_____l",
+    "sentenceComplete": "What was the number of people in total?",
+    "hint": "加總後的全部總計 (in total)",
+    "note": "【考卷第19題】",
+    "image": "images/total.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&q=80",
+    "week": "week1",
+    "day": "day4",
+    "date": "9/4",
+    "dayLabel": "9/4 (四)"
+  },
+  {
+    "id": "sep_04_library",
+    "word": "LIBRARY",
+    "partOfSpeech": "n",
+    "translation": "圖書館",
+    "phonics": "/ˈlaɪ.brer.i/",
+    "sentence": "He's at the l_____y looking at books.",
+    "clue": "l_____y",
+    "sentenceComplete": "He's at the library looking at books.",
+    "hint": "借書看書的地方",
+    "note": "【考卷第20題】",
+    "image": "images/library.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80",
+    "week": "week1",
+    "day": "day4",
+    "date": "9/4",
+    "dayLabel": "9/4 (四)"
+  },
+  {
+    "id": "sep_07_almost",
+    "word": "ALMOST",
+    "partOfSpeech": "adv",
+    "translation": "幾乎",
+    "phonics": "/ˈɔːl.moʊst/",
+    "sentence": "We are a_____t at the school.",
+    "clue": "a_____t",
+    "sentenceComplete": "We are almost at the school.",
+    "hint": "差一點點就到了、幾乎",
+    "note": "【9月7日大英核心字】",
+    "image": "images/almost.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week2",
+    "day": "day1",
+    "date": "9/7",
+    "dayLabel": "9/7 (一)"
+  },
+  {
+    "id": "sep_07_pack",
+    "word": "PACK",
+    "partOfSpeech": "v",
+    "translation": "打包",
+    "phonics": "/pæk/",
+    "sentence": "Can you p_____k some snacks for me?",
+    "clue": "p_____k",
+    "sentenceComplete": "Can you pack some snacks for me?",
+    "hint": "把東西收進行李或袋子中",
+    "note": "【9月7日大英核心字】",
+    "image": "images/pack.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80",
+    "week": "week2",
+    "day": "day1",
+    "date": "9/7",
+    "dayLabel": "9/7 (一)"
+  },
+  {
+    "id": "sep_07_fruit",
+    "word": "FRUIT",
+    "partOfSpeech": "n",
+    "translation": "水果",
+    "phonics": "/fruːt/",
+    "sentence": "Kay is cutting up some f_____t.",
+    "clue": "f_____t",
+    "sentenceComplete": "Kay is cutting up some fruit.",
+    "hint": "甜美多汁的水果",
+    "note": "【9月7日大英核心字】",
+    "image": "images/fruit.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80",
+    "week": "week2",
+    "day": "day1",
+    "date": "9/7",
+    "dayLabel": "9/7 (一)"
+  },
+  {
+    "id": "sep_07_rice",
+    "word": "RICE",
+    "partOfSpeech": "n",
+    "translation": "米飯；米",
+    "phonics": "/raɪs/",
+    "sentence": "What do you want with your r_____e?",
+    "clue": "r_____e",
+    "sentenceComplete": "What do you want with your rice?",
+    "hint": "白米飯",
+    "note": "【9月7日大英核心字】",
+    "image": "images/rice.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1516684732162-798a0062be99?w=400&q=80",
+    "week": "week2",
+    "day": "day1",
+    "date": "9/7",
+    "dayLabel": "9/7 (一)"
+  },
+  {
+    "id": "sep_07_fish",
+    "word": "FISH",
+    "partOfSpeech": "n",
+    "translation": "魚",
+    "phonics": "/fɪʃ/",
+    "sentence": "Would you like some f_____h for dinner?",
+    "clue": "f_____h",
+    "sentenceComplete": "Would you like some fish for dinner?",
+    "hint": "美味的魚料理",
+    "note": "【9月7日大英核心字】",
+    "image": "images/fish.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=400&q=80",
+    "week": "week2",
+    "day": "day1",
+    "date": "9/7",
+    "dayLabel": "9/7 (一)"
+  },
+  {
+    "id": "sep_08_breakfast",
+    "word": "BREAKFAST",
+    "partOfSpeech": "n",
+    "translation": "早餐",
+    "phonics": "/ˈbrek.fəst/",
+    "sentence": "What did you have for b_____t?",
+    "clue": "b_____t",
+    "sentenceComplete": "What did you have for breakfast?",
+    "hint": "早晨起床吃的第一餐",
+    "note": "【9月8日大英核心字】",
+    "image": "images/breakfast.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&q=80",
+    "week": "week2",
+    "day": "day2",
+    "date": "9/8",
+    "dayLabel": "9/8 (二)"
+  },
+  {
+    "id": "sep_08_leftovers",
+    "word": "LEFTOVERS",
+    "partOfSpeech": "n",
+    "translation": "剩菜",
+    "phonics": "/ˈleftˌoʊ.vɚz/",
+    "sentence": "Do you want to take any l_____s?",
+    "clue": "l_____s",
+    "sentenceComplete": "Do you want to take any leftovers?",
+    "hint": "上一餐吃剩下打包的菜餚",
+    "note": "【9月8日大英核心字】",
+    "image": "images/leftovers.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80",
+    "week": "week2",
+    "day": "day2",
+    "date": "9/8",
+    "dayLabel": "9/8 (二)"
+  },
+  {
+    "id": "sep_08_protein",
+    "word": "PROTEIN",
+    "partOfSpeech": "n",
+    "translation": "蛋白質",
+    "phonics": "/ˈproʊ.tiːn/",
+    "sentence": "Meat is one kind of p_____n.",
+    "clue": "p_____n",
+    "sentenceComplete": "Meat is one kind of protein.",
+    "hint": "肉蛋魚豆中的營養素",
+    "note": "【9月8日大英核心字】",
+    "image": "images/protein.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80",
+    "week": "week2",
+    "day": "day2",
+    "date": "9/8",
+    "dayLabel": "9/8 (二)"
+  },
+  {
+    "id": "sep_08_bottom",
+    "word": "BOTTOM",
+    "partOfSpeech": "adj",
+    "translation": "底層的",
+    "phonics": "/ˈbɑː.t̬əm/",
+    "sentence": "What's in the b_____m box?",
+    "clue": "b_____m",
+    "sentenceComplete": "What's in the bottom box?",
+    "hint": "最底下那一層",
+    "note": "【9月8日大英核心字】",
+    "image": "images/bottom.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week2",
+    "day": "day2",
+    "date": "9/8",
+    "dayLabel": "9/8 (二)"
+  },
+  {
+    "id": "sep_08_plate",
+    "word": "PLATE",
+    "partOfSpeech": "n",
+    "translation": "盤子",
+    "phonics": "/pleɪt/",
+    "sentence": "Everyone, take a paper p_____e and cup.",
+    "clue": "p_____e",
+    "sentenceComplete": "Everyone, take a paper plate and cup.",
+    "hint": "盛裝食物的淺盤",
+    "note": "【9月8日大英核心字】",
+    "image": "images/plate.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80",
+    "week": "week2",
+    "day": "day2",
+    "date": "9/8",
+    "dayLabel": "9/8 (二)"
+  },
+  {
+    "id": "sep_09_guy",
+    "word": "GUYS",
+    "baseWord": "GUY",
+    "partOfSpeech": "n",
+    "translation": "男人；傢伙 (複數)",
+    "phonics": "/ɡaɪz/",
+    "sentence": "Do you know those three g_____s?",
+    "clue": "g_____s",
+    "sentenceComplete": "Do you know those three guys?",
+    "hint": "那些男生夥伴們",
+    "note": "【9月9日大英核心字】",
+    "image": "images/guy.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week2",
+    "day": "day3",
+    "date": "9/9",
+    "dayLabel": "9/9 (三)"
+  },
+  {
+    "id": "sep_09_apartment",
+    "word": "APARTMENT",
+    "partOfSpeech": "n",
+    "translation": "公寓",
+    "phonics": "/əˈpɑːrt.mənt/",
+    "sentence": "Ben's a_____t has one bedroom.",
+    "clue": "a_____t",
+    "sentenceComplete": "Ben's apartment has one bedroom.",
+    "hint": "居住的一套公寓房屋",
+    "note": "【9月9日大英核心字】",
+    "image": "images/apartment.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80",
+    "week": "week2",
+    "day": "day3",
+    "date": "9/9",
+    "dayLabel": "9/9 (三)"
+  },
+  {
+    "id": "sep_09_join",
+    "word": "JOINED",
+    "baseWord": "JOIN",
+    "partOfSpeech": "v",
+    "translation": "加入；參加 (過去式)",
+    "phonics": "/dʒɔɪnd/",
+    "sentence": "Kari j_____ed the group of girls outside.",
+    "clue": "j_____ed",
+    "sentenceComplete": "Kari joined the group of girls outside.",
+    "hint": "加入團體行列",
+    "note": "【9月9日大英核心字】",
+    "image": "images/join.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week2",
+    "day": "day3",
+    "date": "9/9",
+    "dayLabel": "9/9 (三)"
+  },
+  {
+    "id": "sep_09_uncomfortable",
+    "word": "UNCOMFORTABLE",
+    "partOfSpeech": "adj",
+    "translation": "不自在的；不舒服的",
+    "phonics": "/ʌnˈkʌm.fɚ.t̬ə.bəl/",
+    "sentence": "That man makes me feel u_____e.",
+    "clue": "u_____e",
+    "sentenceComplete": "That man makes me feel uncomfortable.",
+    "hint": "感到渾身不自在彆扭",
+    "note": "【9月9日大英核心字】",
+    "image": "images/uncomfortable.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week2",
+    "day": "day3",
+    "date": "9/9",
+    "dayLabel": "9/9 (三)"
+  },
+  {
+    "id": "sep_09_text",
+    "word": "TEXT",
+    "partOfSpeech": "v",
+    "translation": "給...傳簡訊",
+    "phonics": "/tekst/",
+    "sentence": "Please t_____t me when you're downtown.",
+    "clue": "t_____t",
+    "sentenceComplete": "Please text me when you're downtown.",
+    "hint": "用手機傳送訊息",
+    "note": "【9月9日大英核心字】",
+    "image": "images/text.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80",
+    "week": "week2",
+    "day": "day3",
+    "date": "9/9",
+    "dayLabel": "9/9 (三)"
+  },
+  {
+    "id": "sep_10_environment",
+    "word": "ENVIRONMENT",
+    "partOfSpeech": "n",
+    "translation": "環境",
+    "phonics": "/ɪnˈvaɪ.rən.mənt/",
+    "sentence": "We should protect the e_____t.",
+    "clue": "e_____t",
+    "sentenceComplete": "We should protect the environment.",
+    "hint": "我們生活的大自然環境",
+    "note": "【9月10日大英核心字】",
+    "image": "images/environment.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80",
+    "week": "week2",
+    "day": "day4",
+    "date": "9/10",
+    "dayLabel": "9/10 (四)"
+  },
+  {
+    "id": "sep_10_kilogram",
+    "word": "KILOGRAMS",
+    "baseWord": "KILOGRAM",
+    "partOfSpeech": "n",
+    "translation": "公斤 (複數)",
+    "phonics": "/ˈkɪl.ə.ɡræmz/",
+    "sentence": "Hazel's dog weighs 20 k_____s.",
+    "clue": "k_____s",
+    "sentenceComplete": "Hazel's dog weighs 20 kilograms.",
+    "hint": "公制重量單位公斤",
+    "note": "【9月10日大英核心字】",
+    "image": "images/kilogram.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=400&q=80",
+    "week": "week2",
+    "day": "day4",
+    "date": "9/10",
+    "dayLabel": "9/10 (四)"
+  },
+  {
+    "id": "sep_10_local",
+    "word": "LOCAL",
+    "partOfSpeech": "adj",
+    "translation": "當地的；本地的",
+    "phonics": "/ˈloʊ.kəl/",
+    "sentence": "We went to a l_____l museum.",
+    "clue": "l_____l",
+    "sentenceComplete": "We went to a local museum.",
+    "hint": "本地附近的",
+    "note": "【9月10日大英核心字】",
+    "image": "images/local.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week2",
+    "day": "day4",
+    "date": "9/10",
+    "dayLabel": "9/10 (四)"
+  },
+  {
+    "id": "sep_10_fuel",
+    "word": "FUEL",
+    "partOfSpeech": "n",
+    "translation": "燃料",
+    "phonics": "/ˈfjuː.əl/",
+    "sentence": "The plane needs f_____l to fly.",
+    "clue": "f_____l",
+    "sentenceComplete": "The plane needs fuel to fly.",
+    "hint": "飛機或車輛發動必備的燃油",
+    "note": "【9月10日大英核心字】",
+    "image": "images/fuel.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week2",
+    "day": "day4",
+    "date": "9/10",
+    "dayLabel": "9/10 (四)"
+  },
+  {
+    "id": "sep_10_ugly",
+    "word": "UGLY",
+    "partOfSpeech": "adj",
+    "translation": "難看的；醜陋的",
+    "phonics": "/ˈʌɡ.li/",
+    "sentence": "Tim is wearing an u_____y shirt today.",
+    "clue": "u_____y",
+    "sentenceComplete": "Tim is wearing an ugly shirt today.",
+    "hint": "不好看的外表",
+    "note": "【9月10日大英核心字】",
+    "image": "images/ugly.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week2",
+    "day": "day4",
+    "date": "9/10",
+    "dayLabel": "9/10 (四)"
+  },
+  {
+    "id": "sep_11_dish",
+    "word": "DISHES",
+    "baseWord": "DISH",
+    "partOfSpeech": "n",
+    "translation": "(一道)菜；盤子 (複數)",
+    "phonics": "/ˈdɪʃ.ɪz/",
+    "sentence": "My mom cooked several d_____s for dinner.",
+    "clue": "d_____s",
+    "sentenceComplete": "My mom cooked several dishes for dinner.",
+    "hint": "一道道美味佳餚",
+    "note": "【9月11日大英核心字】",
+    "image": "images/dish.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80",
+    "week": "week2",
+    "day": "day5",
+    "date": "9/11",
+    "dayLabel": "9/11 (五)"
+  },
+  {
+    "id": "sep_11_option",
+    "word": "OPTIONS",
+    "baseWord": "OPTION",
+    "partOfSpeech": "n",
+    "translation": "選擇；選項 (複數)",
+    "phonics": "/ˈɑːp.ʃənz/",
+    "sentence": "What o_____s do we have?",
+    "clue": "o_____s",
+    "sentenceComplete": "What options do we have?",
+    "hint": "可供挑選的方案",
+    "note": "【9月11日大英核心字】",
+    "image": "images/option.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "week": "week2",
+    "day": "day5",
+    "date": "9/11",
+    "dayLabel": "9/11 (五)"
+  },
+  {
+    "id": "sep_11_concerned",
+    "word": "CONCERNED",
+    "partOfSpeech": "adj",
+    "translation": "掛念的；擔心的",
+    "phonics": "/kənˈsɝːnd/",
+    "sentence": "She's very c_____d about Tyler.",
+    "clue": "c_____d",
+    "sentenceComplete": "She's very concerned about Tyler.",
+    "hint": "心裡非常關切擔心 (be concerned about)",
+    "note": "【9月11日大英核心字】",
+    "image": "images/concerned.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week2",
+    "day": "day5",
+    "date": "9/11",
+    "dayLabel": "9/11 (五)"
+  },
+  {
+    "id": "sep_11_server",
+    "word": "SERVER",
+    "partOfSpeech": "n",
+    "translation": "服務生；侍者",
+    "phonics": "/ˈsɝː.vɚ/",
+    "sentence": "The s_____r took our order.",
+    "clue": "s_____r",
+    "sentenceComplete": "The server took our order.",
+    "hint": "餐廳負責點餐端菜的人員",
+    "note": "【9月11日大英核心字】",
+    "image": "images/server.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=400&q=80",
+    "week": "week2",
+    "day": "day5",
+    "date": "9/11",
+    "dayLabel": "9/11 (五)"
+  },
+  {
+    "id": "sep_11_onion",
+    "word": "ONIONS",
+    "baseWord": "ONION",
+    "partOfSpeech": "n",
+    "translation": "洋蔥 (複數)",
+    "phonics": "/ˈʌn.jənz/",
+    "sentence": "The soup has lots of o_____s in it.",
+    "clue": "o_____s",
+    "sentenceComplete": "The soup has lots of onions in it.",
+    "hint": "煮湯辛香可口的洋蔥蔬菜",
+    "note": "【9月11日大英核心字】",
+    "image": "images/onion.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80",
+    "week": "week2",
+    "day": "day5",
+    "date": "9/11",
+    "dayLabel": "9/11 (五)"
+  },
+  {
+    "id": "sep_14_junior_high",
+    "word": "JUNIOR",
+    "partOfSpeech": "n",
+    "translation": "初級中學、國中 (junior high school)",
+    "phonics": "/ˈdʒuː.njɚ/",
+    "sentence": "Caleb is in j_____r high school.",
+    "clue": "j_____r",
+    "sentenceComplete": "Caleb is in junior high school.",
+    "hint": "國中七至九年級階段",
+    "note": "【9月14日大英核心字】",
+    "image": "images/junior.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week3",
+    "day": "day1",
+    "date": "9/14",
+    "dayLabel": "9/14 (一)"
+  },
+  {
+    "id": "sep_14_play",
+    "word": "PLAY",
+    "partOfSpeech": "n",
+    "translation": "戲劇；話劇",
+    "phonics": "/pleɪ/",
+    "sentence": "Are you in the school p_____y?",
+    "clue": "p_____y",
+    "sentenceComplete": "Are you in the school play?",
+    "hint": "舞台上排演的劇本話劇",
+    "note": "【9月14日大英核心字】",
+    "image": "images/play.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=400&q=80",
+    "week": "week3",
+    "day": "day1",
+    "date": "9/14",
+    "dayLabel": "9/14 (一)"
+  },
+  {
+    "id": "sep_14_servant",
+    "word": "SERVANT",
+    "partOfSpeech": "n",
+    "translation": "僕人",
+    "phonics": "/ˈsɝː.vənt/",
+    "sentence": "A s_____t is cleaning the room.",
+    "clue": "s_____t",
+    "sentenceComplete": "A servant is cleaning the room.",
+    "hint": "在宅邸服侍打掃的人",
+    "note": "【9月14日大英核心字】",
+    "image": "images/servant.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=400&q=80",
+    "week": "week3",
+    "day": "day1",
+    "date": "9/14",
+    "dayLabel": "9/14 (一)"
+  },
+  {
+    "id": "sep_14_guard",
+    "word": "GUARD",
+    "partOfSpeech": "n",
+    "translation": "守衛；警衛",
+    "phonics": "/ɡɑːrd/",
+    "sentence": "A g_____d is standing by the door.",
+    "clue": "g_____d",
+    "sentenceComplete": "A guard is standing by the door.",
+    "hint": "在門口保衛警戒的人",
+    "note": "【9月14日大英核心字】",
+    "image": "images/guard.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=400&q=80",
+    "week": "week3",
+    "day": "day1",
+    "date": "9/14",
+    "dayLabel": "9/14 (一)"
+  },
+  {
+    "id": "sep_14_practice",
+    "word": "PRACTICE",
+    "partOfSpeech": "n",
+    "translation": "練習；訓練",
+    "phonics": "/ˈpræk.tɪs/",
+    "sentence": "Joshua has soccer p_____e tomorrow.",
+    "clue": "p_____e",
+    "sentenceComplete": "Joshua has soccer practice tomorrow.",
+    "hint": "足球訓練練習",
+    "note": "【9月14日大英核心字】",
+    "image": "images/practice.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week3",
+    "day": "day1",
+    "date": "9/14",
+    "dayLabel": "9/14 (一)"
+  },
+  {
+    "id": "sep_15_net",
+    "word": "NET",
+    "partOfSpeech": "n",
+    "translation": "網；網狀物",
+    "phonics": "/net/",
+    "sentence": "They caught the birds in a n_____t.",
+    "clue": "n_____t",
+    "sentenceComplete": "They caught the birds in a net.",
+    "hint": "捕魚或捉鳥的網子",
+    "note": "【9月15日大英核心字】",
+    "image": "images/net.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80",
+    "week": "week3",
+    "day": "day2",
+    "date": "9/15",
+    "dayLabel": "9/15 (二)"
+  },
+  {
+    "id": "sep_15_dead",
+    "word": "DEAD",
+    "partOfSpeech": "adj",
+    "translation": "死的",
+    "phonics": "/ded/",
+    "sentence": "Some of the plants are d_____d.",
+    "clue": "d_____d",
+    "sentenceComplete": "Some of the plants are dead.",
+    "hint": "失去生機枯萎了",
+    "note": "【9月15日大英核心字】",
+    "image": "images/dead.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week3",
+    "day": "day2",
+    "date": "9/15",
+    "dayLabel": "9/15 (二)"
+  },
+  {
+    "id": "sep_15_jar",
+    "word": "JAR",
+    "partOfSpeech": "n",
+    "translation": "罐子",
+    "phonics": "/dʒɑːr/",
+    "sentence": "Did you buy a j_____r of jam?",
+    "clue": "j_____r",
+    "sentenceComplete": "Did you buy a jar of jam?",
+    "hint": "裝果醬的玻璃罐",
+    "note": "【9月15日大英核心字】",
+    "image": "images/jar.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=400&q=80",
+    "week": "week3",
+    "day": "day2",
+    "date": "9/15",
+    "dayLabel": "9/15 (二)"
+  },
+  {
+    "id": "sep_15_smoke",
+    "word": "SMOKE",
+    "partOfSpeech": "n",
+    "translation": "煙；煙霧",
+    "phonics": "/smoʊk/",
+    "sentence": "The fire is making a lot of s_____e.",
+    "clue": "s_____e",
+    "sentenceComplete": "The fire is making a lot of smoke.",
+    "hint": "燃燒冒出的黑白煙霧",
+    "note": "【9月15日大英核心字】",
+    "image": "images/smoke.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
+    "week": "week3",
+    "day": "day2",
+    "date": "9/15",
+    "dayLabel": "9/15 (二)"
+  },
+  {
+    "id": "sep_15_kill",
+    "word": "KILLED",
+    "baseWord": "KILL",
+    "partOfSpeech": "v",
+    "translation": "殺死 (過去式)",
+    "phonics": "/kɪld/",
+    "sentence": "Mom k_____ed the bugs in the kitchen.",
+    "clue": "k_____ed",
+    "sentenceComplete": "Mom killed the bugs in the kitchen.",
+    "hint": "消滅害蟲",
+    "note": "【9月15日大英核心字】",
+    "image": "images/kill.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week3",
+    "day": "day2",
+    "date": "9/15",
+    "dayLabel": "9/15 (二)"
+  },
+  {
+    "id": "sep_16_free",
+    "word": "FREED",
+    "baseWord": "FREE",
+    "partOfSpeech": "v",
+    "translation": "釋放；使自由 (過去式)",
+    "phonics": "/friːd/",
+    "sentence": "A kind man f_____d the little bird.",
+    "clue": "f_____d",
+    "sentenceComplete": "A kind man freed the little bird.",
+    "hint": "放走籠中鳥讓它自由飛翔",
+    "note": "【9月16日大英核心字】",
+    "image": "images/free.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_16_sigh",
+    "word": "SIGHED",
+    "baseWord": "SIGH",
+    "partOfSpeech": "v",
+    "translation": "嘆氣 (過去式)",
+    "phonics": "/saɪd/",
+    "sentence": "She s_____d when she saw the long line.",
+    "clue": "s_____d",
+    "sentenceComplete": "She sighed when she saw the long line.",
+    "hint": "呼出一口長氣嘆息",
+    "note": "【9月16日大英核心字】",
+    "image": "images/sigh.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_16_treasure",
+    "word": "TREASURE",
+    "partOfSpeech": "n",
+    "translation": "財寶；珍寶",
+    "phonics": "/ˈtreʒ.ɚ/",
+    "sentence": "He was happy when he found the t_____e.",
+    "clue": "t_____e",
+    "sentenceComplete": "He was happy when he found the treasure.",
+    "hint": "埋藏在地下的金銀寶藏",
+    "note": "【9月16日大英核心字】",
+    "image": "images/treasure.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_16_die",
+    "word": "DIED",
+    "baseWord": "DIE",
+    "partOfSpeech": "v",
+    "translation": "死亡 (過去式)",
+    "phonics": "/daɪd/",
+    "sentence": "She is sad because her dog d_____d.",
+    "clue": "d_____d",
+    "sentenceComplete": "She is sad because her dog died.",
+    "hint": "離世死亡",
+    "note": "【9月16日大英核心字】",
+    "image": "images/die.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_16_believe",
+    "word": "BELIEVE",
+    "partOfSpeech": "v",
+    "translation": "相信",
+    "phonics": "/bɪˈliːv/",
+    "sentence": "Did you b_____e his story?",
+    "clue": "b_____e",
+    "sentenceComplete": "Did you believe his story?",
+    "hint": "確信某件事是真的",
+    "note": "【9月16日大英核心字】",
+    "image": "images/believe.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_16_prove",
+    "word": "PROVE",
+    "partOfSpeech": "v",
+    "translation": "證明",
+    "phonics": "/pruːv/",
+    "sentence": "She's right. She can p_____e it.",
+    "clue": "p_____e",
+    "sentenceComplete": "She's right. She can prove it.",
+    "hint": "拿出事實證據來證明",
+    "note": "【9月16日大英核心字】",
+    "image": "images/prove.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+    "week": "week3",
+    "day": "day3",
+    "date": "9/16",
+    "dayLabel": "9/16 (三)"
+  },
+  {
+    "id": "sep_17_holiday",
+    "word": "HOLIDAY",
+    "partOfSpeech": "n",
+    "translation": "節日、假日；假期",
+    "phonics": "/ˈhɑː.lə.deɪ/",
+    "sentence": "Chinese New Year is my favorite h_____y.",
+    "clue": "h_____y",
+    "sentenceComplete": "Chinese New Year is my favorite holiday.",
+    "hint": "放假歡度的節慶",
+    "note": "【9月17日大英核心字】",
+    "image": "images/holiday.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&q=80",
+    "week": "week3",
+    "day": "day4",
+    "date": "9/17",
+    "dayLabel": "9/17 (四)"
+  },
+  {
+    "id": "sep_17_express",
+    "word": "EXPRESS",
+    "partOfSpeech": "v",
+    "translation": "表達；陳述",
+    "phonics": "/ɪkˈspres/",
+    "sentence": "You need to e_____s your ideas better.",
+    "clue": "e_____s",
+    "sentenceComplete": "You need to express your ideas better.",
+    "hint": "把心中的想法清晰說出來",
+    "note": "【9月17日大英核心字】",
+    "image": "images/express.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week3",
+    "day": "day4",
+    "date": "9/17",
+    "dayLabel": "9/17 (四)"
+  },
+  {
+    "id": "sep_17_influence",
+    "word": "INFLUENCE",
+    "partOfSpeech": "v",
+    "translation": "影響",
+    "phonics": "/ˈɪn.flu.əns/",
+    "sentence": "Her friends i_____e her in good ways.",
+    "clue": "i_____e",
+    "sentenceComplete": "Her friends influence her in good ways.",
+    "hint": "帶來良好深遠的影響",
+    "note": "【9月17日大英核心字】",
+    "image": "images/influence.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week3",
+    "day": "day4",
+    "date": "9/17",
+    "dayLabel": "9/17 (四)"
+  },
+  {
+    "id": "sep_17_raise",
+    "word": "RAISED",
+    "baseWord": "RAISE",
+    "partOfSpeech": "v",
+    "translation": "撫養、養育 (過去式)",
+    "phonics": "/reɪzd/",
+    "sentence": "She r_____d her child all by herself.",
+    "clue": "r_____d",
+    "sentenceComplete": "She raised her child all by herself.",
+    "hint": "一手拉拔長大撫養成人",
+    "note": "【9月17日大英核心字】",
+    "image": "images/raise.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&q=80",
+    "week": "week3",
+    "day": "day4",
+    "date": "9/17",
+    "dayLabel": "9/17 (四)"
+  },
+  {
+    "id": "sep_17_share",
+    "word": "SHARED",
+    "baseWord": "SHARE",
+    "partOfSpeech": "v",
+    "translation": "分享；講述 (過去式)",
+    "phonics": "/ʃerd/",
+    "sentence": "He s_____d his ideas with us after lunch.",
+    "clue": "s_____d",
+    "sentenceComplete": "He shared his ideas with us after lunch.",
+    "hint": "向大家分享好想法",
+    "note": "【9月17日大英核心字】",
+    "image": "images/share.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week3",
+    "day": "day4",
+    "date": "9/17",
+    "dayLabel": "9/17 (四)"
+  },
+  {
+    "id": "sep_18_master",
+    "word": "MASTER",
+    "partOfSpeech": "n",
+    "translation": "大師；名家",
+    "phonics": "/ˈmæs.tɚ/",
+    "sentence": "The m_____r taught his students well.",
+    "clue": "m_____r",
+    "sentenceComplete": "The master taught his students well.",
+    "hint": "技藝高超的老師父或宗師",
+    "note": "【9月18日大英核心字】",
+    "image": "images/master.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_18_behave",
+    "word": "BEHAVE",
+    "partOfSpeech": "v",
+    "translation": "表現；舉止端正",
+    "phonics": "/bɪˈheɪv/",
+    "sentence": "Always b_____e kindly.",
+    "clue": "b_____e",
+    "sentenceComplete": "Always behave kindly.",
+    "hint": "言行舉止得體友善",
+    "note": "【9月18日大英核心字】",
+    "image": "images/behave.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_18_rich",
+    "word": "RICH",
+    "partOfSpeech": "adj",
+    "translation": "富有的；富裕的",
+    "phonics": "/rɪtʃ/",
+    "sentence": "The r_____h man owns several houses.",
+    "clue": "r_____h",
+    "sentenceComplete": "The rich man owns several houses.",
+    "hint": "擁有大批資產的富人",
+    "note": "【9月18日大英核心字】",
+    "image": "images/rich.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_18_leader",
+    "word": "LEADER",
+    "partOfSpeech": "n",
+    "translation": "領導者；領袖",
+    "phonics": "/ˈliː.dɚ/",
+    "sentence": "The l_____r showed them what to do.",
+    "clue": "l_____r",
+    "sentenceComplete": "The leader showed them what to do.",
+    "hint": "帶領團隊的前鋒主管",
+    "note": "【9月18日大英核心字】",
+    "image": "images/leader.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_18_government",
+    "word": "GOVERNMENT",
+    "partOfSpeech": "n",
+    "translation": "政府",
+    "phonics": "/ˈɡʌv.ɚn.mənt/",
+    "sentence": "This country has a good g_____t.",
+    "clue": "g_____t",
+    "sentenceComplete": "This country has a good government.",
+    "hint": "治理國家的行政機構",
+    "note": "【9月18日大英核心字】",
+    "image": "images/government.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_18_wise",
+    "word": "WISE",
+    "partOfSpeech": "adj",
+    "translation": "明智的；聰明的",
+    "phonics": "/waɪz/",
+    "sentence": "A w_____e man gave him good advice.",
+    "clue": "w_____e",
+    "sentenceComplete": "A wise man gave him good advice.",
+    "hint": "充滿生活大智慧的長者",
+    "note": "【9月18日大英核心字】",
+    "image": "images/wise.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+    "week": "week3",
+    "day": "day5",
+    "date": "9/18",
+    "dayLabel": "9/18 (五)"
+  },
+  {
+    "id": "sep_21_barbecue",
+    "word": "BARBECUE",
+    "partOfSpeech": "n",
+    "translation": "烤肉餐會；烤肉 (BBQ)",
+    "phonics": "/ˈbɑːr.bə.kjuː/",
+    "sentence": "A lot of people came to the b_____e.",
+    "clue": "b_____e",
+    "sentenceComplete": "A lot of people came to the barbecue.",
+    "hint": "熱鬧飄香的戶外烤肉趴",
+    "note": "【9月21日大英核心字】",
+    "image": "images/barbecue.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80",
+    "week": "week4",
+    "day": "day1",
+    "date": "9/21",
+    "dayLabel": "9/21 (一)"
+  },
+  {
+    "id": "sep_21_grill",
+    "word": "GRILL",
+    "partOfSpeech": "v",
+    "translation": "燒烤",
+    "phonics": "/ɡrɪl/",
+    "sentence": "Let's g_____l some meat for dinner.",
+    "clue": "g_____l",
+    "sentenceComplete": "Let's grill some meat for dinner.",
+    "hint": "放在烤架上用火烤",
+    "note": "【9月21日大英核心字】",
+    "image": "images/grill.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80",
+    "week": "week4",
+    "day": "day1",
+    "date": "9/21",
+    "dayLabel": "9/21 (一)"
+  },
+  {
+    "id": "sep_21_burger",
+    "word": "BURGERS",
+    "baseWord": "BURGER",
+    "partOfSpeech": "n",
+    "translation": "漢堡 (複數)",
+    "phonics": "/ˈbɝː.ɡɚz/",
+    "sentence": "How many b_____s can you eat?",
+    "clue": "b_____s",
+    "sentenceComplete": "How many burgers can you eat?",
+    "hint": "夾有牛肉餡與生菜的美味漢堡",
+    "note": "【9月21日大英核心字】",
+    "image": "images/burger.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80",
+    "week": "week4",
+    "day": "day1",
+    "date": "9/21",
+    "dayLabel": "9/21 (一)"
+  },
+  {
+    "id": "sep_21_wood",
+    "word": "WOOD",
+    "partOfSpeech": "n",
+    "translation": "木柴；木頭",
+    "phonics": "/wʊd/",
+    "sentence": "Put more w_____d on the fire.",
+    "clue": "w_____d",
+    "sentenceComplete": "Put more wood on the fire.",
+    "hint": "生營火烤肉添加的木材",
+    "note": "【9月21日大英核心字】",
+    "image": "images/wood.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week4",
+    "day": "day1",
+    "date": "9/21",
+    "dayLabel": "9/21 (一)"
+  },
+  {
+    "id": "sep_21_steak",
+    "word": "STEAK",
+    "partOfSpeech": "n",
+    "translation": "牛排",
+    "phonics": "/steɪk/",
+    "sentence": "Henry is hungry. He wants a big s_____k.",
+    "clue": "s_____k",
+    "sentenceComplete": "Henry is hungry. He wants a big steak.",
+    "hint": "香氣四溢的大片牛排",
+    "note": "【9月21日大英核心字】",
+    "image": "images/steak.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80",
+    "week": "week4",
+    "day": "day1",
+    "date": "9/21",
+    "dayLabel": "9/21 (一)"
+  },
+  {
+    "id": "sep_22_special",
+    "word": "SPECIAL",
+    "partOfSpeech": "adj",
+    "translation": "特別的",
+    "phonics": "/ˈspeʃ.əl/",
+    "sentence": "She made a s_____l card for her friend.",
+    "clue": "s_____l",
+    "sentenceComplete": "She made a special card for her friend.",
+    "hint": "獨具匠心特製的",
+    "note": "【9月22日大英核心字】",
+    "image": "images/special.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&q=80",
+    "week": "week4",
+    "day": "day2",
+    "date": "9/22",
+    "dayLabel": "9/22 (二)"
+  },
+  {
+    "id": "sep_22_moon_festival",
+    "word": "FESTIVAL",
+    "baseWord": "MOON FESTIVAL",
+    "partOfSpeech": "n",
+    "translation": "中秋節 (Moon Festival)",
+    "phonics": "/ˈfes.tə.vəl/",
+    "sentence": "How will you celebrate Moon F_____l?",
+    "clue": "F_____l",
+    "sentenceComplete": "How will you celebrate Moon Festival?",
+    "hint": "農曆八月十五吃月餅的中秋節慶",
+    "note": "【9月22日大英核心字】",
+    "image": "images/moon_festival.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?w=400&q=80",
+    "week": "week4",
+    "day": "day2",
+    "date": "9/22",
+    "dayLabel": "9/22 (二)"
+  },
+  {
+    "id": "sep_22_outdoors",
+    "word": "OUTDOORS",
+    "partOfSpeech": "adv",
+    "translation": "在戶外",
+    "phonics": "/ˌaʊtˈdɔːrz/",
+    "sentence": "He likes sitting o_____s in the sun.",
+    "clue": "o_____s",
+    "sentenceComplete": "He likes sitting outdoors in the sun.",
+    "hint": "在室外露天公園",
+    "note": "【9月22日大英核心字】",
+    "image": "images/outdoors.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&q=80",
+    "week": "week4",
+    "day": "day2",
+    "date": "9/22",
+    "dayLabel": "9/22 (二)"
+  },
+  {
+    "id": "sep_22_gather",
+    "word": "GATHERING",
+    "baseWord": "GATHER",
+    "partOfSpeech": "v",
+    "translation": "聚集 (現在分詞)",
+    "phonics": "/ˈɡæð.ɚ.ɪŋ/",
+    "sentence": "Everyone is g_____g in the park.",
+    "clue": "g_____g",
+    "sentenceComplete": "Everyone is gathering in the park.",
+    "hint": "大家聚集在一起 (is gathering)",
+    "note": "【9月22日大英核心字】",
+    "image": "images/gather.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week4",
+    "day": "day2",
+    "date": "9/22",
+    "dayLabel": "9/22 (二)"
+  },
+  {
+    "id": "sep_22_location",
+    "word": "LOCATION",
+    "partOfSpeech": "n",
+    "translation": "地點；位置",
+    "phonics": "/loʊˈkeɪ.ʃən/",
+    "sentence": "They changed the l_____n of the party.",
+    "clue": "l_____n",
+    "sentenceComplete": "They changed the location of the party.",
+    "hint": "派對舉辦的處所位置",
+    "note": "【9月22日大英核心字】",
+    "image": "images/location.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=400&q=80",
+    "week": "week4",
+    "day": "day2",
+    "date": "9/22",
+    "dayLabel": "9/22 (二)"
+  },
+  {
+    "id": "sep_23_volleyball",
+    "word": "VOLLEYBALL",
+    "partOfSpeech": "n",
+    "translation": "排球",
+    "phonics": "/ˈvɑː.li.bɑːl/",
+    "sentence": "V_____l is Pam's favorite sport.",
+    "clue": "V_____l",
+    "sentenceComplete": "Volleyball is Pam's favorite sport.",
+    "hint": "跳起扣殺的排球運動",
+    "note": "【9月23日大英核心字】",
+    "image": "images/volleyball.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=80",
+    "week": "week4",
+    "day": "day3",
+    "date": "9/23",
+    "dayLabel": "9/23 (三)"
+  },
+  {
+    "id": "sep_23_team",
+    "word": "TEAM",
+    "partOfSpeech": "n",
+    "translation": "團體；(球)隊",
+    "phonics": "/tiːm/",
+    "sentence": "How many people are on your t_____m?",
+    "clue": "t_____m",
+    "sentenceComplete": "How many people are on your team?",
+    "hint": "隊伍團隊",
+    "note": "【9月23日大英核心字】",
+    "image": "images/team.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week4",
+    "day": "day3",
+    "date": "9/23",
+    "dayLabel": "9/23 (三)"
+  },
+  {
+    "id": "sep_23_court",
+    "word": "COURT",
+    "partOfSpeech": "n",
+    "translation": "球場；賽場",
+    "phonics": "/kɔːrt/",
+    "sentence": "Which c_____t are we playing on?",
+    "clue": "c_____t",
+    "sentenceComplete": "Which court are we playing on?",
+    "hint": "排球、網球或籃球場",
+    "note": "【9月23日大英核心字】",
+    "image": "images/court.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=80",
+    "week": "week4",
+    "day": "day3",
+    "date": "9/23",
+    "dayLabel": "9/23 (三)"
+  },
+  {
+    "id": "sep_23_player",
+    "word": "PLAYER",
+    "partOfSpeech": "n",
+    "translation": "球員；選手",
+    "phonics": "/ˈpleɪ.ɚ/",
+    "sentence": "David is a good baseball p_____r.",
+    "clue": "p_____r",
+    "sentenceComplete": "David is a good baseball player.",
+    "hint": "運動員選手",
+    "note": "【9月23日大英核心字】",
+    "image": "images/player.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80",
+    "week": "week4",
+    "day": "day3",
+    "date": "9/23",
+    "dayLabel": "9/23 (三)"
+  },
+  {
+    "id": "sep_23_indoors",
+    "word": "INDOORS",
+    "partOfSpeech": "adv",
+    "translation": "在室內",
+    "phonics": "/ˌɪnˈdɔːrz/",
+    "sentence": "It was raining, so they played i_____s.",
+    "clue": "i_____s",
+    "sentenceComplete": "It was raining, so they played indoors.",
+    "hint": "在屋內室內體育館",
+    "note": "【9月23日大英核心字】",
+    "image": "images/indoors.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week4",
+    "day": "day3",
+    "date": "9/23",
+    "dayLabel": "9/23 (三)"
+  },
+  {
+    "id": "sep_24_match",
+    "word": "MATCH",
+    "partOfSpeech": "n",
+    "translation": "比賽；競賽",
+    "phonics": "/mætʃ/",
+    "sentence": "Who won the m_____h?",
+    "clue": "m_____h",
+    "sentenceComplete": "Who won the match?",
+    "hint": "體育對決賽事",
+    "note": "【9月24日大英核心字】",
+    "image": "images/match.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=80",
+    "week": "week4",
+    "day": "day4",
+    "date": "9/24",
+    "dayLabel": "9/24 (四)"
+  },
+  {
+    "id": "sep_24_serve",
+    "word": "SERVE",
+    "partOfSpeech": "n",
+    "translation": "發球",
+    "phonics": "/sɝːv/",
+    "sentence": "That was a great s_____e!",
+    "clue": "s_____e",
+    "sentenceComplete": "That was a great serve!",
+    "hint": "開局精彩的發球",
+    "note": "【9月24日大英核心字】",
+    "image": "images/serve.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=80",
+    "week": "week4",
+    "day": "day4",
+    "date": "9/24",
+    "dayLabel": "9/24 (四)"
+  },
+  {
+    "id": "sep_24_attack",
+    "word": "ATTACK",
+    "partOfSpeech": "n",
+    "translation": "進攻；攻擊",
+    "phonics": "/əˈtæk/",
+    "sentence": "Ed jumped up to block the a_____k.",
+    "clue": "a_____k",
+    "sentenceComplete": "Ed jumped up to block the attack.",
+    "hint": "起跳攔截對手的猛攻",
+    "note": "【9月24日大英核心字】",
+    "image": "images/attack.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=80",
+    "week": "week4",
+    "day": "day4",
+    "date": "9/24",
+    "dayLabel": "9/24 (四)"
+  },
+  {
+    "id": "sep_24_difficult",
+    "word": "DIFFICULT",
+    "partOfSpeech": "adj",
+    "translation": "困難的；費力的",
+    "phonics": "/ˈdɪf.ə.kəlt/",
+    "sentence": "It is d_____t to get up early.",
+    "clue": "d_____t",
+    "sentenceComplete": "It is difficult to get up early.",
+    "hint": "不容易達成的難題",
+    "note": "【9月24日大英核心字】",
+    "image": "images/difficult.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80",
+    "week": "week4",
+    "day": "day4",
+    "date": "9/24",
+    "dayLabel": "9/24 (四)"
+  },
+  {
+    "id": "sep_24_effort",
+    "word": "EFFORT",
+    "partOfSpeech": "n",
+    "translation": "努力；氣力",
+    "phonics": "/ˈef.ɚt/",
+    "sentence": "Make an e_____t to do the job well.",
+    "clue": "e_____t",
+    "sentenceComplete": "Make an effort to do the job well.",
+    "hint": "付出全力與努力 (make an effort)",
+    "note": "【9月24日大英核心字】",
+    "image": "images/effort.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "week": "week4",
+    "day": "day4",
+    "date": "9/24",
+    "dayLabel": "9/24 (四)"
+  },
+  {
+    "id": "sep_25_recycle",
+    "word": "RECYCLE",
+    "partOfSpeech": "v",
+    "translation": "回收再利用",
+    "phonics": "/ˌriːˈsaɪ.kəl/",
+    "sentence": "R_____e bottles to help the Earth.",
+    "clue": "R_____e",
+    "sentenceComplete": "Recycle bottles to help the Earth.",
+    "hint": "做資源回收愛護地球",
+    "note": "【9月25日大英核心字】",
+    "image": "images/recycle.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&q=80",
+    "week": "week4",
+    "day": "day5",
+    "date": "9/25",
+    "dayLabel": "9/25 (五)"
+  },
+  {
+    "id": "sep_25_collect",
+    "word": "COLLECT",
+    "partOfSpeech": "v",
+    "translation": "收集；使集中",
+    "phonics": "/kəˈlekt/",
+    "sentence": "Please c_____t the books from everyone.",
+    "clue": "c_____t",
+    "sentenceComplete": "Please collect the books from everyone.",
+    "hint": "把大家作業簿收齊上繳",
+    "note": "【9月25日大英核心字】",
+    "image": "images/collect.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80",
+    "week": "week4",
+    "day": "day5",
+    "date": "9/25",
+    "dayLabel": "9/25 (五)"
+  },
+  {
+    "id": "sep_25_prevent",
+    "word": "PREVENT",
+    "partOfSpeech": "v",
+    "translation": "預防；阻止；避免",
+    "phonics": "/prɪˈvent/",
+    "sentence": "Rules p_____t problems at school.",
+    "clue": "p_____t",
+    "sentenceComplete": "Rules prevent problems at school.",
+    "hint": "防患於未然",
+    "note": "【9月25日大英核心字】",
+    "image": "images/prevent.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+    "week": "week4",
+    "day": "day5",
+    "date": "9/25",
+    "dayLabel": "9/25 (五)"
+  },
+  {
+    "id": "sep_25_supplies",
+    "word": "SUPPLIES",
+    "partOfSpeech": "n",
+    "translation": "日用品；生活必需品",
+    "phonics": "/səˈplaɪz/",
+    "sentence": "We need more office s_____s.",
+    "clue": "s_____s",
+    "sentenceComplete": "We need more office supplies.",
+    "hint": "辦公或生活文具補給品",
+    "note": "【9月25日大英核心字】",
+    "image": "images/supplies.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=400&q=80",
+    "week": "week4",
+    "day": "day5",
+    "date": "9/25",
+    "dayLabel": "9/25 (五)"
+  },
+  {
+    "id": "sep_25_dig",
+    "word": "DUG",
+    "baseWord": "DIG",
+    "partOfSpeech": "v",
+    "translation": "挖；鑿 (過去式)",
+    "phonics": "/dʌɡ/",
+    "sentence": "The dog d_____g a hole in the garden.",
+    "clue": "d_____g",
+    "sentenceComplete": "The dog dug a hole in the garden.",
+    "hint": "dig 的不規則過去式是 dug",
+    "note": "【9月25日大英核心字・注意不規則變化】",
+    "image": "images/dig.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=80",
+    "week": "week4",
+    "day": "day5",
+    "date": "9/25",
+    "dayLabel": "9/25 (五)"
+  },
+  {
+    "id": "sep_28_single",
+    "word": "SINGLE",
+    "partOfSpeech": "adj",
+    "translation": "單身的；未婚的",
+    "phonics": "/ˈsɪŋ.ɡəl/",
+    "sentence": "Abby is still s_____e.",
+    "clue": "s_____e",
+    "sentenceComplete": "Abby is still single.",
+    "hint": "還沒有結婚或交往對象",
+    "note": "【9月28日大英核心字】",
+    "image": "images/single.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80",
+    "week": "week5",
+    "day": "day1",
+    "date": "9/28",
+    "dayLabel": "9/28 (一)"
+  },
+  {
+    "id": "sep_28_hand",
+    "word": "HAND",
+    "partOfSpeech": "v",
+    "translation": "將...遞給、交給",
+    "phonics": "/hænd/",
+    "sentence": "Please h_____d me those books.",
+    "clue": "h_____d",
+    "sentenceComplete": "Please hand me those books.",
+    "hint": "用手遞送傳遞過去 (hand over)",
+    "note": "【9月28日大英核心字】",
+    "image": "images/hand.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+    "week": "week5",
+    "day": "day1",
+    "date": "9/28",
+    "dayLabel": "9/28 (一)"
+  },
+  {
+    "id": "sep_28_classroom",
+    "word": "CLASSROOM",
+    "partOfSpeech": "n",
+    "translation": "教室",
+    "phonics": "/ˈklæs.ruːm/",
+    "sentence": "There are 25 students in the c_____m.",
+    "clue": "c_____m",
+    "sentenceComplete": "There are 25 students in the classroom.",
+    "hint": "學生上課的班級教室",
+    "note": "【9月28日大英核心字】",
+    "image": "images/classroom.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80",
+    "week": "week5",
+    "day": "day1",
+    "date": "9/28",
+    "dayLabel": "9/28 (一)"
+  },
+  {
+    "id": "sep_28_flower",
+    "word": "FLOWER",
+    "partOfSpeech": "n",
+    "translation": "花；開花植物",
+    "phonics": "/ˈflaʊ.ɚ/",
+    "sentence": "Roses are my favorite f_____r.",
+    "clue": "f_____r",
+    "sentenceComplete": "Roses are my favorite flower.",
+    "hint": "芳香盛開的花朵",
+    "note": "【9月28日大英核心字】",
+    "image": "images/flower.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80",
+    "week": "week5",
+    "day": "day1",
+    "date": "9/28",
+    "dayLabel": "9/28 (一)"
+  },
+  {
+    "id": "sep_28_date",
+    "word": "DATE",
+    "partOfSpeech": "n",
+    "translation": "約會",
+    "phonics": "/deɪt/",
+    "sentence": "Do you want to go on a d_____e?",
+    "clue": "d_____e",
+    "sentenceComplete": "Do you want to go on a date?",
+    "hint": "男女朋友浪漫出遊 (go on a date)",
+    "note": "【9月28日大英核心字】",
+    "image": "images/date.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400&q=80",
+    "week": "week5",
+    "day": "day1",
+    "date": "9/28",
+    "dayLabel": "9/28 (一)"
+  },
+  {
+    "id": "sep_29_spend",
+    "word": "SPENT",
+    "baseWord": "SPEND",
+    "partOfSpeech": "v",
+    "translation": "花(時間) (過去式)",
+    "phonics": "/spent/",
+    "sentence": "He s_____t an hour reading.",
+    "clue": "s_____t",
+    "sentenceComplete": "He spent an hour reading.",
+    "hint": "spend 的過去式是 spent",
+    "note": "【9月29日大英核心字・注意過去式】",
+    "image": "images/spend.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&q=80",
+    "week": "week5",
+    "day": "day2",
+    "date": "9/29",
+    "dayLabel": "9/29 (二)"
+  },
+  {
+    "id": "sep_29_set",
+    "word": "SET",
+    "partOfSpeech": "v",
+    "translation": "放置；設定",
+    "phonics": "/set/",
+    "sentence": "Please s_____t these glasses on the table.",
+    "clue": "s_____t",
+    "sentenceComplete": "Please set these glasses on the table.",
+    "hint": "擺放定位",
+    "note": "【9月29日大英核心字】",
+    "image": "images/set.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&q=80",
+    "week": "week5",
+    "day": "day2",
+    "date": "9/29",
+    "dayLabel": "9/29 (二)"
+  },
+  {
+    "id": "sep_29_aloud",
+    "word": "ALOUD",
+    "partOfSpeech": "adv",
+    "translation": "出聲地；大聲地",
+    "phonics": "/əˈlaʊd/",
+    "sentence": "Read the story a_____d to us.",
+    "clue": "a_____d",
+    "sentenceComplete": "Read the story aloud to us.",
+    "hint": "念出聲音讓大家聽見",
+    "note": "【9月29日大英核心字】",
+    "image": "images/aloud.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
+    "week": "week5",
+    "day": "day2",
+    "date": "9/29",
+    "dayLabel": "9/29 (二)"
+  },
+  {
+    "id": "sep_29_wallet",
+    "word": "WALLET",
+    "partOfSpeech": "n",
+    "translation": "皮夾；錢包",
+    "phonics": "/ˈwɑː.lɪt/",
+    "sentence": "He has a lot of money in his w_____t.",
+    "clue": "w_____t",
+    "sentenceComplete": "He has a lot of money in his wallet.",
+    "hint": "放鈔票卡片的隨身短夾",
+    "note": "【9月29日大英核心字】",
+    "image": "images/wallet.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&q=80",
+    "week": "week5",
+    "day": "day2",
+    "date": "9/29",
+    "dayLabel": "9/29 (二)"
+  },
+  {
+    "id": "sep_29_pause",
+    "word": "PAUSE",
+    "partOfSpeech": "v",
+    "translation": "暫停",
+    "phonics": "/pɑːz/",
+    "sentence": "Let's p_____e and rest for a minute.",
+    "clue": "p_____e",
+    "sentenceComplete": "Let's pause and rest for a minute.",
+    "hint": "稍微歇息片刻",
+    "note": "【9月29日大英核心字】",
+    "image": "images/pause.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&q=80",
+    "week": "week5",
+    "day": "day2",
+    "date": "9/29",
+    "dayLabel": "9/29 (二)"
+  },
+  {
+    "id": "sep_30_return",
+    "word": "RETURNED",
+    "baseWord": "RETURN",
+    "partOfSpeech": "v",
+    "translation": "歸還 (過去式)",
+    "phonics": "/rɪˈtɝːnd/",
+    "sentence": "He r_____ed my book to me.",
+    "clue": "r_____ed",
+    "sentenceComplete": "He returned my book to me.",
+    "hint": "物歸原主還給對方",
+    "note": "【9月30日大英核心字】",
+    "image": "images/return.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80",
+    "week": "week5",
+    "day": "day3",
+    "date": "9/30",
+    "dayLabel": "9/30 (三)"
+  },
+  {
+    "id": "sep_30_notice",
+    "word": "NOTICE",
+    "partOfSpeech": "v",
+    "translation": "看到；注意到",
+    "phonics": "/ˈnoʊ.t̬ɪs/",
+    "sentence": "Did you n_____e the dog in the street?",
+    "clue": "n_____e",
+    "sentenceComplete": "Did you notice the dog in the street?",
+    "hint": "用眼睛察覺注意到",
+    "note": "【9月30日大英核心字】",
+    "image": "images/notice.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80",
+    "week": "week5",
+    "day": "day3",
+    "date": "9/30",
+    "dayLabel": "9/30 (三)"
+  },
+  {
+    "id": "sep_30_clever",
+    "word": "CLEVER",
+    "partOfSpeech": "adj",
+    "translation": "聰明的；機靈的",
+    "phonics": "/ˈklev.ɚ/",
+    "sentence": "Eva has many c_____r ideas.",
+    "clue": "c_____r",
+    "sentenceComplete": "Eva has many clever ideas.",
+    "hint": "靈活聰穎的點子",
+    "note": "【9月30日大英核心字】",
+    "image": "images/clever.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=400&q=80",
+    "week": "week5",
+    "day": "day3",
+    "date": "9/30",
+    "dayLabel": "9/30 (三)"
+  },
+  {
+    "id": "sep_30_picture",
+    "word": "PICTURE",
+    "partOfSpeech": "n",
+    "translation": "照片",
+    "phonics": "/ˈpɪk.tʃɚ/",
+    "sentence": "Take a p_____e of me by the tree.",
+    "clue": "p_____e",
+    "sentenceComplete": "Take a picture of me by the tree.",
+    "hint": "拍照攝影留念 (take a picture)",
+    "note": "【9月30日大英核心字】",
+    "image": "images/picture.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80",
+    "week": "week5",
+    "day": "day3",
+    "date": "9/30",
+    "dayLabel": "9/30 (三)"
+  },
+  {
+    "id": "sep_30_bike",
+    "word": "BIKE",
+    "partOfSpeech": "n",
+    "translation": "單車；自行車 (bicycle)",
+    "phonics": "/baɪk/",
+    "sentence": "My mother bought me a b_____e.",
+    "clue": "b_____e",
+    "sentenceComplete": "My mother bought me a bike.",
+    "hint": "騎兩輪腳踏車",
+    "note": "【9月30日大英核心字】",
+    "image": "images/bike.jpg",
+    "fallbackImage": "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=400&q=80",
+    "week": "week5",
+    "day": "day3",
+    "date": "9/30",
+    "dayLabel": "9/30 (三)"
+  }
+];
+    const weeksConfig = [
+  {
+    "id": "week1",
+    "name": "第 1 週 (9/1~9/4)",
+    "icon": "🌸",
+    "days": [
+      "day1",
+      "day2",
+      "day3",
+      "day4"
+    ],
+    "dateRange": "9/1 ~ 9/4 (共 4 天)"
+  },
+  {
+    "id": "week2",
+    "name": "第 2 週 (9/7~9/11)",
+    "icon": "🍱",
+    "days": [
+      "day1",
+      "day2",
+      "day3",
+      "day4",
+      "day5"
+    ],
+    "dateRange": "9/7 ~ 9/11 (共 5 天)"
+  },
+  {
+    "id": "week3",
+    "name": "第 3 週 (9/14~9/18)",
+    "icon": "🎭",
+    "days": [
+      "day1",
+      "day2",
+      "day3",
+      "day4",
+      "day5"
+    ],
+    "dateRange": "9/14 ~ 9/18 (共 5 天)"
+  },
+  {
+    "id": "week4",
+    "name": "第 4 週 (9/21~9/25)",
+    "icon": "🏐",
+    "days": [
+      "day1",
+      "day2",
+      "day3",
+      "day4",
+      "day5"
+    ],
+    "dateRange": "9/21 ~ 9/25 (共 5 天)"
+  },
+  {
+    "id": "week5",
+    "name": "第 5 週 (9/28~9/30)",
+    "icon": "📖",
+    "days": [
+      "day1",
+      "day2",
+      "day3"
+    ],
+    "dateRange": "9/28 ~ 9/30 (共 3 天)"
+  }
+];
+
+    // ==========================================
+    // 2. 原生音效合成器 (Web Audio API)
+    // ==========================================
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playPop() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
+      }
+      playRemove() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(260, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
+      }
+      playSuccess() {
+        try {
+          this.init();
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            const startTime = this.ctx.currentTime + idx * 0.1;
+            gain.gain.setValueAtTime(0.3, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.35);
+          });
+        } catch (e) {}
+      }
+      playTryAgain() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(240, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
+      }
+    }
+    const sfx = new SoundFX();
+
+    // ==========================================
+    // 3. 原生彩色灑花特效
+    // ==========================================
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+      for (let i = 0; i < 110; i++) {
+        particles.push({
+          x: canvas.width * (0.2 + Math.random() * 0.6),
+          y: canvas.height * 0.5,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.8) * 18,
+          size: 6 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 12,
+          gravity: 0.45,
+          opacity: 1
+        });
+      }
+
+      let frame = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rotationSpeed;
+          p.opacity -= 0.009;
+
+          if (p.opacity > 0 && p.y < canvas.height) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        });
+
+        frame++;
+        if (alive && frame < 180) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      animate();
+    }
+
+    const PRAISES = [
+      { en: "Awesome job, Bella! You are a superstar!", zh: "太厲害了，Bella！單字完全掌握！🌟" },
+      { en: "Bingo! Fantastic spelling, Bella!", zh: "答對了！Bella 拼得太準確了！🎉" },
+      { en: "Brilliant! You got the right word, Bella!", zh: "太優秀了！Bella 成功掌握課文句型！🚀" },
+      { en: "High five, Bella! That was perfect!", zh: "擊掌，Bella！表現太棒了！🙌" },
+      { en: "You're getting so good at this, Bella!", zh: "Bella 越來越厲害囉！✨" }
+    ];
+
+    // ==========================================
+    // 4. 主遊戲控制邏輯
+    // ==========================================
+    class SpellingApp {
+      constructor() {
+        this.allWords = [...allWords];
+        this.currentWeek = 'week1';
+        this.currentDay = 'day1'; // 'day1', 'day2', ... , 'review', 'unlearned'
+        this.currentUser = 'Bella';
+        this.profiles = this.loadProfiles();
+        this.words = this.getFilteredWords();
+        this.currentIndex = 0;
+        
+        this.slots = [];
+        this.letterPool = [];
+        this.isSolved = false;
+        this.speechSequenceToken = 0;
+
+        this.cacheDom();
+        this.renderWeekTabs();
+        this.renderDayTabs();
+        this.bindEvents();
+        this.renderProfile();
+        this.loadWord(0);
+      }
+
+      getDisplayWord(wordData) {
+        if (!wordData) return '';
+        if (wordData.isProperNoun) return wordData.word;
+        return wordData.word.toLowerCase();
+      }
+
+      speak(text, rate = 0.85, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = rate;
+        if (onEnd) {
+          u.onend = () => onEnd();
+          u.onerror = () => onEnd();
+        }
+        window.speechSynthesis.speak(u);
+      }
+
+      speakZh(text, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'zh-TW';
+        u.rate = 1.0;
+        if (onEnd) {
+          u.onend = () => onEnd();
+          u.onerror = () => onEnd();
+        }
+        window.speechSynthesis.speak(u);
+      }
+
+      speakSentence(sentence, onEnd = null) {
+        if (!sentence) return;
+        this.speak(sentence, 0.82, onEnd);
+      }
+
+      speakSpelling(word) {
+        if (!word) return;
+        const letters = word.split('');
+        let i = 0;
+        const speakNext = () => {
+          if (i < letters.length) {
+            this.speak(letters[i], 0.75, () => {
+              i++;
+              setTimeout(speakNext, 120);
+            });
+          }
+        };
+        speakNext();
+      }
+
+      playBilingualTwice(word, translation, onEnd = null) {
+        if (!('speechSynthesis' in window)) {
+          if (onEnd) onEnd();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const currentToken = ++this.speechSequenceToken;
+
+        this.speak(word, 0.85, () => {
+          if (this.speechSequenceToken !== currentToken) return;
+          setTimeout(() => {
+            if (this.speechSequenceToken !== currentToken) return;
+            this.speakZh(translation, () => {
+              if (this.speechSequenceToken !== currentToken) return;
+              setTimeout(() => {
+                if (this.speechSequenceToken !== currentToken) return;
+                this.speak(word, 0.85, () => {
+                  if (this.speechSequenceToken !== currentToken) return;
+                  setTimeout(() => {
+                    if (this.speechSequenceToken !== currentToken) return;
+                    this.speakZh(translation, onEnd);
+                  }, 200);
+                });
+              }, 300);
+            });
+          }, 200);
+        });
+      }
+
+      shuffleArray(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      getFilteredWords() {
+        const profile = this.profiles[this.currentUser] || { completed: {} };
+        const completedMap = profile.completed || {};
+
+        const weekWords = this.allWords.filter(w => w.week === this.currentWeek);
+
+        if (this.currentDay === 'review') {
+          return [...weekWords];
+        }
+
+        if (this.currentDay === 'unlearned') {
+          return weekWords.filter(w => !completedMap[w.id]);
+        }
+
+        return weekWords.filter(w => w.day === this.currentDay);
+      }
+
+      shuffleCurrentQuestions() {
+        sfx.playPop();
+        this.words = this.shuffleArray(this.words);
+        this.currentIndex = 0;
+        this.loadWord(0);
+      }
+
+      loadProfiles() {
+        const saved = localStorage.getItem('bella_spelling_profile_v4');
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch (e) {}
+        }
+        return {
+          Bella: { name: 'Bella', avatar: '👧', stars: 0, completed: {}, history: [] }
+        };
+      }
+
+      saveProfiles() {
+        localStorage.setItem('bella_spelling_profile_v4', JSON.stringify(this.profiles));
+      }
+
+      cacheDom() {
+        this.dom = {
+          userStarsEl: document.getElementById('user-stars'),
+          statsModalBtn: document.getElementById('open-stats-btn'),
+          statsModal: document.getElementById('stats-modal'),
+          closeStatsBtn: document.getElementById('close-stats-btn'),
+          statsList: document.getElementById('stats-list'),
+
+          weekTabs: document.getElementById('week-tabs'),
+          dayTabs: document.getElementById('day-tabs'),
+
+          wordImg: document.getElementById('word-image'),
+          wordTranslation: document.getElementById('word-translation'),
+          wordPhonics: document.getElementById('word-phonics'),
+          wordHint: document.getElementById('word-hint'),
+          speakBtn: document.getElementById('speak-btn'),
+          speakSlowBtn: document.getElementById('speak-slow-btn'),
+          
+          wordNoteBadge: document.getElementById('word-note-badge'),
+          wordNoteText: document.getElementById('word-note-text'),
+          speakSentenceBtn: document.getElementById('speak-sentence-btn'),
+          wordSentenceDisplay: document.getElementById('word-sentence-display'),
+
+          slotsContainer: document.getElementById('slots-container'),
+          lettersPoolContainer: document.getElementById('letters-pool'),
+          resetLettersBtn: document.getElementById('reset-letters-btn'),
+          hintBtn: document.getElementById('hint-btn'),
+          prevWordBtn: document.getElementById('prev-word-btn'),
+          nextWordBtn: document.getElementById('next-word-btn'),
+          shuffleWordsBtn: document.getElementById('shuffle-words-btn'),
+          wordCounter: document.getElementById('word-counter'),
+          
+          feedbackCard: document.getElementById('feedback-card'),
+          feedbackEmoji: document.getElementById('feedback-emoji'),
+          feedbackTitle: document.getElementById('feedback-title'),
+          feedbackSubtitle: document.getElementById('feedback-subtitle'),
+          feedbackActionBtn: document.getElementById('feedback-action-btn'),
+          feedbackWordBox: document.getElementById('feedback-word-box'),
+          feedbackWordImg: document.getElementById('feedback-word-img'),
+          feedbackSpellingTiles: document.getElementById('feedback-spelling-tiles'),
+          feedbackWordText: document.getElementById('feedback-word-text'),
+          feedbackWordTranslation: document.getElementById('feedback-word-translation'),
+          feedbackWordPhonics: document.getElementById('feedback-word-phonics'),
+          feedbackCompleteSentence: document.getElementById('feedback-complete-sentence'),
+          feedbackBtnSpell: document.getElementById('feedback-btn-spell'),
+          feedbackBtnEn: document.getElementById('feedback-btn-en'),
+          feedbackBtnSentence: document.getElementById('feedback-btn-sentence'),
+          feedbackBtnZh: document.getElementById('feedback-btn-zh')
+        };
+      }
+
+      // 渲染第 1 層：週次選單
+      renderWeekTabs() {
+        if (!this.dom.weekTabs) return;
+        this.dom.weekTabs.innerHTML = '';
+
+        const profile = this.profiles[this.currentUser] || { completed: {} };
+
+        weeksConfig.forEach(week => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = this.currentWeek === week.id;
+
+          const weekWordList = this.allWords.filter(w => w.week === week.id);
+          const masteredCount = weekWordList.filter(w => !!profile.completed[w.id]).length;
+          const totalCount = weekWordList.length;
+
+          btn.className = `flex items-center gap-1 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 ${
+            isActive 
+              ? 'bg-pink-600 text-white shadow-md scale-105 ring-2 ring-pink-300' 
+              : 'bg-white/85 hover:bg-white text-slate-700 shadow-xs border border-slate-200 hover:scale-102'
+          }`;
+
+          btn.innerHTML = `<span>${week.icon}</span><span>${week.name}</span><span class="text-[10px] sm:text-xs opacity-80 font-normal">(${masteredCount}/${totalCount})</span>`;
+          btn.addEventListener('click', () => {
+            sfx.playPop();
+            this.currentWeek = week.id;
+            // 預設切換到該週的 day1
+            this.currentDay = 'day1';
+            this.words = this.getFilteredWords();
+            this.renderWeekTabs();
+            this.renderDayTabs();
+            this.currentIndex = 0;
+            this.loadWord(0);
+          });
+          this.dom.weekTabs.appendChild(btn);
+        });
+      }
+
+      // 渲染第 2 層：天數選單 (依週次自適應實際天數：第1週4天，其他5天，第5週3天)
+      renderDayTabs() {
+        if (!this.dom.dayTabs) return;
+        this.dom.dayTabs.innerHTML = '';
+
+        const profile = this.profiles[this.currentUser] || { completed: {} };
+        const weekWordList = this.allWords.filter(w => w.week === this.currentWeek);
+        const currentWeekConfig = weeksConfig.find(w => w.id === this.currentWeek) || weeksConfig[0];
+
+        // 收集該週所有的有效天數
+        const daysList = currentWeekConfig.days;
+
+        daysList.forEach(dayId => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = this.currentDay === dayId;
+
+          const dWords = weekWordList.filter(w => w.day === dayId);
+          const m = dWords.filter(w => !!profile.completed[w.id]).length;
+          const label = dWords[0]?.dayLabel || dayId;
+
+          btn.className = `flex items-center gap-1 px-2.5 py-0.5 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all duration-200 ${
+            isActive 
+              ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200 scale-102' 
+              : 'bg-white/70 hover:bg-white text-slate-600 shadow-2xs border border-slate-200/80 hover:text-slate-800'
+          }`;
+
+          btn.innerHTML = `<span>📅</span><span>${label}</span><span class="text-[10px] opacity-80">(${m}/${dWords.length})</span>`;
+          btn.addEventListener('click', () => {
+            sfx.playPop();
+            this.currentDay = dayId;
+            this.words = this.getFilteredWords();
+            this.renderDayTabs();
+            this.currentIndex = 0;
+            this.loadWord(0);
+          });
+          this.dom.dayTabs.appendChild(btn);
+        });
+
+        // 加入「整週總複習」按鈕
+        const reviewBtn = document.createElement('button');
+        reviewBtn.type = 'button';
+        const isReviewActive = this.currentDay === 'review';
+        const reviewMastered = weekWordList.filter(w => !!profile.completed[w.id]).length;
+
+        reviewBtn.className = `flex items-center gap-1 px-2.5 py-0.5 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all duration-200 ${
+          isReviewActive 
+            ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-200 scale-102' 
+            : 'bg-purple-50 hover:bg-purple-100 text-purple-700 shadow-2xs border border-purple-200'
+        }`;
+        reviewBtn.innerHTML = `<span>🏆</span><span>整週總複習</span><span class="text-[10px] opacity-80">(${reviewMastered}/${weekWordList.length})</span>`;
+        reviewBtn.addEventListener('click', () => {
+          sfx.playPop();
+          this.currentDay = 'review';
+          this.words = this.getFilteredWords();
+          this.renderDayTabs();
+          this.currentIndex = 0;
+          this.loadWord(0);
+        });
+        this.dom.dayTabs.appendChild(reviewBtn);
+
+        // 加入「尚未學過」按鈕
+        const unlearnedWords = weekWordList.filter(w => !profile.completed[w.id]);
+        const unlearnedBtn = document.createElement('button');
+        unlearnedBtn.type = 'button';
+        const isUnlearnedActive = this.currentDay === 'unlearned';
+
+        unlearnedBtn.className = `flex items-center gap-1 px-2.5 py-0.5 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs transition-all duration-200 ${
+          isUnlearnedActive 
+            ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-200 scale-102' 
+            : 'bg-amber-50 hover:bg-amber-100 text-amber-800 shadow-2xs border border-amber-200'
+        }`;
+        unlearnedBtn.innerHTML = `<span>🎯</span><span>尚未學過</span><span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 rounded-full">${unlearnedWords.length}</span>`;
+        unlearnedBtn.addEventListener('click', () => {
+          sfx.playPop();
+          this.currentDay = 'unlearned';
+          this.words = this.getFilteredWords();
+          this.renderDayTabs();
+          this.currentIndex = 0;
+          this.loadWord(0);
+        });
+        this.dom.dayTabs.appendChild(unlearnedBtn);
+      }
+
+      // 核心推進邏輯：當天跳完了，直接跳第二天，絕不重複！
+      handleNextWord() {
+        if (this.currentIndex + 1 < this.words.length) {
+          // 當前天數還有單字，繼續下一題
+          this.currentIndex++;
+          this.loadWord(this.currentIndex);
+        } else {
+          // 當天單字已全數完成！直接晉級到下一天！
+          this.advanceToNextDay();
+        }
+      }
+
+      advanceToNextDay() {
+        const currentWeekConfig = weeksConfig.find(w => w.id === this.currentWeek);
+        const daysList = currentWeekConfig.days; // 例如 ['day1', 'day2', 'day3', 'day4']
+        const currentDayIndex = daysList.indexOf(this.currentDay);
+
+        if (currentDayIndex !== -1 && currentDayIndex < daysList.length - 1) {
+          // 還有下一天 (例如 day1 -> day2)
+          const nextDayId = daysList[currentDayIndex + 1];
+          this.currentDay = nextDayId;
+          this.words = this.getFilteredWords();
+          this.renderDayTabs();
+          this.currentIndex = 0;
+
+          sfx.playSuccess();
+          launchConfetti();
+
+          const dayLabel = this.words[0]?.dayLabel || '下一天';
+          this.speakZh(`太棒了！直接進入 ${dayLabel}！`);
+          this.loadWord(0);
+        } else if (currentDayIndex === daysList.length - 1) {
+          // 當週所有天數完成，直接跳整週總複習
+          this.currentDay = 'review';
+          this.words = this.getFilteredWords();
+          this.renderDayTabs();
+          this.currentIndex = 0;
+
+          sfx.playSuccess();
+          launchConfetti();
+          this.speakZh(`太厲害了！本週天數全過關！進入整週總複習！`);
+          this.loadWord(0);
+        } else if (this.currentDay === 'review') {
+          // 整週總複習也做完了，前進下一週
+          const currentWeekIndex = weeksConfig.findIndex(w => w.id === this.currentWeek);
+          if (currentWeekIndex !== -1 && currentWeekIndex < weeksConfig.length - 1) {
+            const nextWeek = weeksConfig[currentWeekIndex + 1];
+            this.currentWeek = nextWeek.id;
+            this.currentDay = 'day1';
+            this.words = this.getFilteredWords();
+            this.renderWeekTabs();
+            this.renderDayTabs();
+            this.currentIndex = 0;
+
+            sfx.playSuccess();
+            launchConfetti();
+            this.speakZh(`太強了！整週總複習全數通關！前進 ${nextWeek.name}！`);
+            this.loadWord(0);
+          } else {
+            this.renderAllDoneState();
+          }
+        } else {
+          this.renderAllDoneState();
+        }
+      }
+
+      bindEvents() {
+        this.dom.speakBtn.addEventListener('click', () => {
+          sfx.playPop();
+          const w = this.getCurrentWord();
+          this.playBilingualTwice(w.word, w.translation);
+        });
+        this.dom.speakSlowBtn.addEventListener('click', () => this.speak(this.getCurrentWord().word, 0.55));
+        
+        this.dom.speakSentenceBtn?.addEventListener('click', () => {
+          sfx.playPop();
+          const w = this.getCurrentWord();
+          this.speakSentence(w.sentenceComplete || w.sentence);
+        });
+
+        this.dom.resetLettersBtn.addEventListener('click', () => this.resetCurrentBoard());
+        this.dom.hintBtn.addEventListener('click', () => this.giveHint());
+        this.dom.prevWordBtn.addEventListener('click', () => this.prevWord());
+        this.dom.nextWordBtn.addEventListener('click', () => {
+          sfx.playPop();
+          this.handleNextWord();
+        });
+        this.dom.shuffleWordsBtn?.addEventListener('click', () => this.shuffleCurrentQuestions());
+
+        this.dom.statsModalBtn.addEventListener('click', () => this.showStats());
+        this.dom.closeStatsBtn.addEventListener('click', () => this.hideStats());
+        this.dom.statsModal.addEventListener('click', (e) => {
+          if (e.target === this.dom.statsModal) this.hideStats();
+        });
+
+        // 答對彈窗發音按鈕
+        this.dom.feedbackBtnSpell?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speakSpelling(this.getCurrentWord().word);
+        });
+        this.dom.feedbackBtnEn?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speak(this.getCurrentWord().word, 0.85);
+        });
+        this.dom.feedbackBtnSentence?.addEventListener('click', () => {
+          sfx.playPop();
+          const w = this.getCurrentWord();
+          this.speakSentence(w.sentenceComplete || w.sentence);
+        });
+        this.dom.feedbackBtnZh?.addEventListener('click', () => {
+          sfx.playPop();
+          this.speakZh(this.getCurrentWord().translation);
+        });
+
+        this.dom.feedbackActionBtn.addEventListener('click', () => {
+          window.speechSynthesis?.cancel();
+          this.speechSequenceToken++;
+          this.dom.feedbackCard.classList.add('hidden');
+          if (this.isSolved) {
+            if (this.currentDay === 'unlearned') {
+              this.words = this.getFilteredWords();
+              this.renderWeekTabs();
+              this.renderDayTabs();
+              if (this.words.length === 0) {
+                this.loadWord(0);
+                return;
+              }
+              if (this.currentIndex >= this.words.length) {
+                this.currentIndex = 0;
+              }
+              this.loadWord(this.currentIndex);
+            } else {
+              this.handleNextWord();
+            }
+          }
+        });
+      }
+
+      renderProfile() {
+        const profile = this.profiles[this.currentUser] || { name: 'Bella', stars: 0 };
+        if (this.dom.userStarsEl) this.dom.userStarsEl.textContent = profile.stars;
+      }
+
+      getCurrentWord() {
+        return this.words[this.currentIndex] || this.words[0];
+      }
+
+      renderAllDoneState() {
+        this.currentIndex = 0;
+        this.isSolved = true;
+        this.dom.wordTranslation.textContent = "全數通關！";
+        this.dom.wordPhonics.textContent = "Great Job, Bella! 🌟";
+        this.dom.wordHint.textContent = `太強了！Bella 已經掌握此單元所有單字！可以選其他天數或整週總複習喔！`;
+        this.dom.wordCounter.textContent = `0 / 0`;
+        this.dom.wordSentenceDisplay.textContent = "所有文意字彙已通關完成！";
+        this.dom.wordNoteText.textContent = "完美達成";
+        this.dom.wordImg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="%23fef08a"/><path d="M50 18 L59 36 L79 39 L64 53 L68 73 L50 63 L32 73 L36 53 L21 39 L41 36 Z" fill="%23f59e0b"/><circle cx="50" cy="46" r="6" fill="%23fff"/></svg>`;
+        this.dom.slotsContainer.innerHTML = `<div class="text-indigo-700 font-extrabold text-sm bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-2xl">🎉 太棒了！此單元所有單字全部過關囉！</div>`;
+        this.dom.lettersPoolContainer.innerHTML = `<div class="text-slate-400 font-bold text-xs py-2">點選上方按鈕隨時切換天數或整週總複習</div>`;
+        const completedBadge = document.getElementById('word-completed-badge');
+        if (completedBadge) completedBadge.classList.add('hidden');
+        launchConfetti();
+        this.speakZh(`太厲害了，Bella！所有單字都已經學會了！`);
+      }
+
+      loadWord(index) {
+        if (!this.words || this.words.length === 0) {
+          this.renderAllDoneState();
+          return;
+        }
+        if (index < 0) index = 0;
+        if (index >= this.words.length) index = 0;
+        this.currentIndex = index;
+        this.isSolved = false;
+
+        const wordData = this.getCurrentWord();
+        const wordClean = this.getDisplayWord(wordData);
+
+        // 圖片渲染
+        if (wordData.image && !wordData.image.startsWith('<svg') && !wordData.image.startsWith('data:')) {
+          const fallback = wordData.fallbackImage || '';
+          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
+        } else if (wordData.image && wordData.image.startsWith('data:image/svg+xml;utf8,')) {
+          this.dom.wordImg.innerHTML = decodeURIComponent(wordData.image.replace('data:image/svg+xml;utf8,', ''));
+        } else if (wordData.image && wordData.image.startsWith('<svg')) {
+          this.dom.wordImg.innerHTML = wordData.image;
+        } else if (wordData.image) {
+          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
+        }
+
+        this.dom.wordTranslation.textContent = wordData.translation;
+        this.dom.wordPhonics.textContent = wordData.phonics || '';
+        this.dom.wordHint.textContent = wordData.hint || '';
+        this.dom.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+        this.dom.feedbackCard.classList.add('hidden');
+
+        if (this.dom.wordNoteText) {
+          this.dom.wordNoteText.textContent = wordData.note || `【${wordData.dayLabel || '大英9月號'}】`;
+        }
+        if (this.dom.wordSentenceDisplay) {
+          let sentText = wordData.sentence || wordData.sentenceComplete || '';
+          const clue = wordData.clue || '';
+          if (clue && sentText.includes(clue)) {
+            sentText = sentText.replace(clue, `<span class="bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded-md font-mono font-black border border-amber-300 shadow-xs">${clue}</span>`);
+          }
+          this.dom.wordSentenceDisplay.innerHTML = sentText;
+        }
+
+        const isCompleted = !!this.profiles[this.currentUser].completed[wordData.id];
+        const completedBadge = document.getElementById('word-completed-badge');
+        if (completedBadge) {
+          completedBadge.classList.toggle('hidden', !isCompleted);
+        }
+
+        this.slots = new Array(wordClean.length).fill(null);
+
+        const chars = wordClean.split('');
+        const lettersWithId = chars.map((ch, idx) => ({ id: idx, char: ch, used: false }));
+        
+        let shuffled;
+        let attempts = 0;
+        do {
+          shuffled = [...lettersWithId].sort(() => Math.random() - 0.5);
+          attempts++;
+        } while (shuffled.map(l => l.char).join('') === wordClean && chars.length > 2 && attempts < 10);
+
+        this.letterPool = shuffled;
+        this.renderBoard();
+
+        setTimeout(() => {
+          const sentenceToRead = wordData.sentenceComplete || wordData.sentence;
+          if (sentenceToRead) {
+            this.speakSentence(sentenceToRead);
+          } else {
+            this.playBilingualTwice(wordData.word, wordData.translation);
+          }
+        }, 300);
+      }
+
+      renderBoard() {
+        this.renderSlots();
+        this.renderPool();
+      }
+
+      renderSlots() {
+        this.dom.slotsContainer.innerHTML = '';
+        const isLong = this.slots.length > 7;
+        const sizeClass = isLong
+          ? "w-11 h-14 sm:w-13 sm:h-16 md:w-14 md:h-18 lg:w-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-black rounded-2xl"
+          : "w-13 h-16 sm:w-15 sm:h-18 md:w-16 md:h-20 lg:w-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black rounded-2xl sm:rounded-3xl";
+
+        this.slots.forEach((slotItem, slotIndex) => {
+          const slotEl = document.createElement('div');
+          slotEl.className = `${sizeClass} flex items-center justify-center shadow-inner transition-all duration-200 cursor-pointer select-none ${
+            slotItem 
+              ? 'bg-amber-300 text-amber-950 border-3 sm:border-4 border-amber-400 shadow-md transform active:scale-95' 
+              : 'bg-white/85 border-3 sm:border-4 border-dashed border-sky-300 text-transparent hover:border-sky-400'
+          }`;
+          slotEl.dataset.slotIndex = slotIndex;
+
+          if (slotItem) {
+            slotEl.textContent = slotItem.char;
+            slotEl.addEventListener('click', () => {
+              if (this.isSolved) return;
+              this.removeLetterFromSlot(slotIndex);
+            });
+          } else {
+            slotEl.innerHTML = `<span class="text-sky-200 text-base sm:text-lg md:text-xl font-bold">${slotIndex + 1}</span>`;
+          }
+
+          slotEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            slotEl.classList.add('bg-amber-100', 'border-amber-400');
+          });
+          slotEl.addEventListener('dragleave', () => {
+            slotEl.classList.remove('bg-amber-100', 'border-amber-400');
+          });
+          slotEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            slotEl.classList.remove('bg-amber-100', 'border-amber-400');
+            const poolId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            if (!isNaN(poolId)) {
+              this.placeLetterInSlot(poolId, slotIndex);
+            }
+          });
+
+          this.dom.slotsContainer.appendChild(slotEl);
+        });
+      }
+
+      renderPool() {
+        this.dom.lettersPoolContainer.innerHTML = '';
+        const isLong = this.letterPool.length > 7;
+        const sizeClass = isLong
+          ? "w-11 h-14 sm:w-13 sm:h-16 md:w-14 md:h-18 lg:w-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-black rounded-2xl"
+          : "w-13 h-16 sm:w-15 sm:h-18 md:w-16 md:h-20 lg:w-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black rounded-2xl sm:rounded-3xl";
+
+        this.letterPool.forEach((item) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `${sizeClass} flex items-center justify-center shadow-lg transition-all duration-200 select-none ${
+            item.used 
+              ? 'opacity-20 pointer-events-none bg-slate-200 border-2 border-slate-300 text-slate-400 scale-90' 
+              : 'bg-gradient-to-b from-sky-400 to-blue-500 text-white border-b-4 border-blue-700 active:border-b-0 active:translate-y-1 hover:scale-105 active:scale-95 cursor-grab'
+          }`;
+          card.textContent = item.char;
+          card.dataset.poolId = item.id;
+          card.draggable = !item.used && !this.isSolved;
+
+          card.addEventListener('click', () => {
+            if (item.used || this.isSolved) return;
+            const emptySlotIndex = this.slots.findIndex(s => s === null);
+            if (emptySlotIndex !== -1) {
+              this.placeLetterInSlot(item.id, emptySlotIndex);
+            } else {
+              sfx.playTryAgain();
+            }
+          });
+
+          card.addEventListener('dragstart', (e) => {
+            if (item.used || this.isSolved) {
+              e.preventDefault();
+              return;
+            }
+            e.dataTransfer.setData('text/plain', item.id.toString());
+            card.classList.add('opacity-50');
+          });
+
+          card.addEventListener('dragend', () => {
+            card.classList.remove('opacity-50');
+          });
+
+          this.dom.lettersPoolContainer.appendChild(card);
+        });
+      }
+
+      placeLetterInSlot(poolId, slotIndex) {
+        const poolItem = this.letterPool.find(l => l.id === poolId);
+        if (!poolItem || poolItem.used) return;
+
+        if (this.slots[slotIndex]) {
+          const oldPoolId = this.slots[slotIndex].poolId;
+          const oldPoolItem = this.letterPool.find(l => l.id === oldPoolId);
+          if (oldPoolItem) oldPoolItem.used = false;
+        }
+
+        poolItem.used = true;
+        this.slots[slotIndex] = { char: poolItem.char, poolId: poolItem.id };
+        sfx.playPop();
+
+        this.renderBoard();
+        this.checkIfComplete();
+      }
+
+      removeLetterFromSlot(slotIndex) {
+        const slotItem = this.slots[slotIndex];
+        if (!slotItem) return;
+
+        const poolItem = this.letterPool.find(l => l.id === slotItem.poolId);
+        if (poolItem) poolItem.used = false;
+
+        this.slots[slotIndex] = null;
+        sfx.playRemove();
+        this.renderBoard();
+      }
+
+      resetCurrentBoard() {
+        sfx.playRemove();
+        this.letterPool.forEach(l => l.used = false);
+        this.slots = new Array(this.getCurrentWord().word.length).fill(null);
+        this.renderBoard();
+      }
+
+      giveHint() {
+        if (this.isSolved) return;
+        const currentWord = this.getDisplayWord(this.getCurrentWord());
+        
+        for (let i = 0; i < currentWord.length; i++) {
+          const targetChar = currentWord[i];
+          const currentSlot = this.slots[i];
+
+          if (!currentSlot || currentSlot.char !== targetChar) {
+            if (currentSlot) {
+              this.removeLetterFromSlot(i);
+            }
+
+            let availablePoolItem = this.letterPool.find(l => l.char === targetChar && !l.used);
+            if (!availablePoolItem) {
+              const otherSlotIdx = this.slots.findIndex(s => s && s.char === targetChar);
+              if (otherSlotIdx !== -1) {
+                const borrowedPoolId = this.slots[otherSlotIdx].poolId;
+                this.slots[otherSlotIdx] = null;
+                availablePoolItem = this.letterPool.find(l => l.id === borrowedPoolId);
+                availablePoolItem.used = false;
+              }
+            }
+
+            if (availablePoolItem) {
+              this.placeLetterInSlot(availablePoolItem.id, i);
+              const slotElements = this.dom.slotsContainer.children;
+              if (slotElements[i]) {
+                slotElements[i].classList.add('ring-4', 'ring-emerald-400');
+                setTimeout(() => slotElements[i]?.classList.remove('ring-4', 'ring-emerald-400'), 800);
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      checkIfComplete() {
+        const isAllFilled = this.slots.every(s => s !== null);
+        if (!isAllFilled) return;
+
+        const currentWord = this.getDisplayWord(this.getCurrentWord());
+        const assembledWord = this.slots.map(s => s.char).join('');
+
+        if (assembledWord === currentWord) {
+          this.handleSuccess();
+        } else {
+          this.handleFailure();
+        }
+      }
+
+      handleSuccess() {
+        this.isSolved = true;
+        sfx.playSuccess();
+        launchConfetti();
+
+        const profile = this.profiles[this.currentUser];
+        const word = this.getCurrentWord();
+        const isFirstTime = !profile.completed[word.id];
+
+        if (isFirstTime) {
+          profile.stars += 1;
+          profile.completed[word.id] = {
+            date: new Date().toISOString(),
+            times: 1
+          };
+        } else {
+          profile.completed[word.id].times = (profile.completed[word.id].times || 1) + 1;
+        }
+        profile.history.push({
+          word: word.word,
+          success: true,
+          time: new Date().toLocaleTimeString()
+        });
+        this.saveProfiles();
+        this.renderProfile();
+        this.renderWeekTabs();
+        this.renderDayTabs();
+
+        const isLastWordOfDay = this.currentIndex >= this.words.length - 1;
+        const currentWeekConfig = weeksConfig.find(w => w.id === this.currentWeek);
+        const daysList = currentWeekConfig ? currentWeekConfig.days : [];
+        const currentDayIndex = daysList.indexOf(this.currentDay);
+
+        // 如果是當天最後一題，提示即將自動跳下一天
+        if (isLastWordOfDay && currentDayIndex !== -1) {
+          let nextName = '';
+          if (currentDayIndex < daysList.length - 1) {
+            const nextDayId = daysList[currentDayIndex + 1];
+            const nextDayWords = this.allWords.filter(w => w.week === this.currentWeek && w.day === nextDayId);
+            nextName = nextDayWords[0]?.dayLabel || '下一天';
+          } else {
+            nextName = '整週總複習 🏆';
+          }
+
+          this.dom.feedbackEmoji.textContent = '🎉 🌟 👑';
+          this.dom.feedbackTitle.textContent = `太棒了，Bella！${word.dayLabel || '今天'}全部過關！`;
+          this.dom.feedbackSubtitle.textContent = `All done! Ready for ${nextName}!`;
+          this.dom.feedbackActionBtn.textContent = `前進 ${nextName} ➡️`;
+        } else {
+          const praiseTemplate = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+          this.dom.feedbackEmoji.textContent = '🌟 🎉 🏆';
+          this.dom.feedbackTitle.textContent = praiseTemplate.zh;
+          this.dom.feedbackSubtitle.textContent = praiseTemplate.en;
+          this.dom.feedbackActionBtn.textContent = '挑戰下一題 ➡️';
+        }
+
+        if (this.dom.feedbackWordBox) {
+          this.dom.feedbackWordBox.classList.remove('hidden');
+
+          if (word.image && !word.image.startsWith('<svg') && !word.image.startsWith('data:')) {
+            const fallback = word.fallbackImage || '';
+            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-xl" />`;
+          } else if (word.image && word.image.startsWith('data:image/svg+xml;utf8,')) {
+            this.dom.feedbackWordImg.innerHTML = decodeURIComponent(word.image.replace('data:image/svg+xml;utf8,', ''));
+          } else if (word.image && word.image.startsWith('<svg')) {
+            this.dom.feedbackWordImg.innerHTML = word.image;
+          } else if (word.image) {
+            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" class="w-full h-full object-cover rounded-xl" />`;
+          }
+
+          const displayWord = this.getDisplayWord(word);
+          this.dom.feedbackSpellingTiles.innerHTML = displayWord.split('').map(char => `
+            <span class="inline-flex items-center justify-center w-6 h-7 sm:w-7 sm:h-8 rounded-lg bg-indigo-500 text-white font-black text-sm sm:text-base shadow-xs">${char}</span>
+          `).join('');
+
+          this.dom.feedbackWordText.textContent = displayWord;
+          this.dom.feedbackWordTranslation.textContent = word.translation;
+          this.dom.feedbackWordPhonics.textContent = word.phonics || '';
+          this.dom.feedbackCompleteSentence.textContent = word.sentenceComplete || word.sentence || '';
+        }
+
+        this.dom.feedbackCard.classList.remove('hidden');
+        this.speak(word.word, 0.85);
+      }
+
+      handleFailure() {
+        sfx.playTryAgain();
+        this.dom.slotsContainer.classList.add('animate-shake');
+        setTimeout(() => {
+          this.dom.slotsContainer.classList.remove('animate-shake');
+        }, 500);
+      }
+
+      prevWord() {
+        sfx.playPop();
+        if (this.currentIndex > 0) {
+          this.loadWord(this.currentIndex - 1);
+        } else {
+          this.loadWord(0);
+        }
+      }
+
+      showStats() {
+        sfx.playPop();
+        const profile = this.profiles[this.currentUser] || { stars: 0, completed: {}, history: [] };
+        const completedCount = Object.keys(profile.completed).length;
+        const totalCount = this.allWords.length;
+        const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+        let weekStatsHtml = '';
+        weeksConfig.forEach(week => {
+          const wWords = this.allWords.filter(w => w.week === week.id);
+          const cCount = wWords.filter(w => !!profile.completed[w.id]).length;
+          const cTotal = wWords.length;
+          const cPct = cTotal > 0 ? Math.round((cCount / cTotal) * 100) : 0;
+          weekStatsHtml += `
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                <span>${week.icon} ${week.name}</span>
+                <span>${cCount} / ${cTotal} (${cPct}%)</span>
+              </div>
+              <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div class="bg-pink-500 h-full rounded-full transition-all duration-500" style="width: ${cPct}%"></div>
+              </div>
+            </div>
+          `;
+        });
+
+        this.dom.statsList.innerHTML = `
+          <div class="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-4 rounded-2xl shadow-md text-center mb-3">
+            <div class="text-3xl mb-1">⭐ ${profile.stars}</div>
+            <div class="font-extrabold text-base">Bella 的《大家說英語》全真戰報</div>
+            <div class="text-xs opacity-90 mt-1">已掌握 ${completedCount} / ${totalCount} 個官方核心單字 (${pct}%)</div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-xs text-amber-900 leading-relaxed mb-3">
+            <div class="font-black text-sm mb-1 text-amber-950 flex items-center gap-1">
+              <span>💡</span> 每日單元過關提醒
+            </div>
+            <p class="text-slate-700 leading-relaxed">
+              當天單字全部完成後，系統會自動跳到第二天，絕不重複！可以依照每天進度穩扎穩打！
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs font-black text-slate-500 uppercase px-1">各週次進度</div>
+            ${weekStatsHtml}
+          </div>
+        `;
+
+        this.dom.statsModal.classList.remove('hidden');
+      }
+
+      hideStats() {
+        sfx.playPop();
+        this.dom.statsModal.classList.add('hidden');
+      }
+    }
+
+    // 頁面加載完成後啟動
+    window.addEventListener('DOMContentLoaded', () => {
+      new SpellingApp();
+    });
+  </script>
+</body>
+</html>
