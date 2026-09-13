@@ -2648,6 +2648,44 @@
         });
       }
 
+      playSuccessReviewLoop(word, sentence, repeatCount = 3) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const currentToken = ++this.speechSequenceToken;
+
+        let times = 0;
+        const playOnce = () => {
+          if (this.speechSequenceToken !== currentToken) return;
+          if (times >= repeatCount) return;
+
+          // 念單字 (rate 0.85)
+          this.speak(word, 0.85, () => {
+            if (this.speechSequenceToken !== currentToken) return;
+            // 停頓 450ms 念句子
+            setTimeout(() => {
+              if (this.speechSequenceToken !== currentToken) return;
+              if (sentence) {
+                this.speak(sentence, 0.82, () => {
+                  if (this.speechSequenceToken !== currentToken) return;
+                  times++;
+                  if (times < repeatCount) {
+                    // 句子念完後停頓 1.2 秒再重複下一輪
+                    setTimeout(playOnce, 1200);
+                  }
+                });
+              } else {
+                times++;
+                if (times < repeatCount) {
+                  setTimeout(playOnce, 1200);
+                }
+              }
+            }, 450);
+          });
+        };
+
+        playOnce();
+      }
+
       shuffleArray(arr) {
         const copy = [...arr];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -3376,7 +3414,10 @@
         }
 
         this.dom.feedbackCard.classList.remove('hidden');
-        this.speak(word.word, 0.85);
+        const sentenceToRead = word.sentenceComplete || word.sentence || '';
+        setTimeout(() => {
+          this.playSuccessReviewLoop(word.word, sentenceToRead, 3);
+        }, 350);
       }
 
       handleFailure() {
