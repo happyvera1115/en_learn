@@ -128,8 +128,13 @@
       <div class="w-full md:w-7/12 lg:w-8/12 flex flex-col justify-between">
         
         <!-- 操作小提醒 -->
-        <div class="text-xs sm:text-sm text-slate-600 bg-sky-50 px-3.5 py-1.5 rounded-full mb-2 border border-sky-100 flex items-center justify-center gap-1.5 font-medium shadow-xs">
-          <span>💡</span> 拖拉字母到空格，或「點擊字母」自動排入喔！
+        <div class="relative w-full">
+          <div id="operation-tip" class="text-xs sm:text-sm text-slate-600 bg-sky-50 px-3.5 py-1.5 rounded-full mb-2 border border-sky-100 flex items-center justify-center gap-1.5 font-medium shadow-xs transition-all duration-300">
+            <span>💡</span> 拖拉字母到空格，或「點擊字母」自動排入喔！
+          </div>
+          <div id="hint-alert-toast" class="hidden absolute inset-0 z-10 text-xs sm:text-sm text-amber-950 bg-amber-200/95 font-bold px-3.5 py-1.5 rounded-full mb-2 border-2 border-amber-400 flex items-center justify-center gap-1.5 shadow-md animate-shake">
+            <span>💪</span> <span id="hint-alert-text">Tim 先自己試試看，至少放一個字母進空格才能求助提示喔！</span>
+          </div>
         </div>
 
         <!-- 拼字空格放置區 (Slots) -->
@@ -187,7 +192,19 @@
     <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center transform">
       <div id="feedback-emoji" class="text-4xl sm:text-5xl mb-2">🎉 🌟 👏</div>
       <h3 id="feedback-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">太棒了，Tim！答對了！</h3>
-      <p id="feedback-subtitle" class="text-indigo-600 font-bold text-sm sm:text-base mb-3">Awesome job! You are a superstar!</p>
+      <p id="feedback-subtitle" class="text-indigo-600 font-bold text-sm sm:text-base mb-2">Awesome job! You are a superstar!</p>
+      
+      <!-- 作答戰績：花費時間與嘗試次數 -->
+      <div id="feedback-stats-row" class="flex items-center justify-center gap-2 sm:gap-3 mb-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100/90 text-amber-900 border border-amber-300/80 font-black text-xs sm:text-sm shadow-xs">
+          <span>⏱️</span>
+          <span>本次用時：<strong id="feedback-time-text" class="text-amber-950 font-extrabold text-sm sm:text-base">5</strong> 秒</span>
+        </div>
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/90 text-indigo-900 border border-indigo-200 font-black text-xs sm:text-sm shadow-xs">
+          <span>🎯</span>
+          <span>嘗試次數：<strong id="feedback-attempts-text" class="text-indigo-950 font-extrabold text-sm sm:text-base">1</strong> 次</span>
+        </div>
+      </div>
       
       <!-- 答對時的單字強化複習區 (包含圖片、正確拼字、中文與三大發音按鈕) -->
       <div id="feedback-word-box" class="hidden my-4 p-3.5 sm:p-4 bg-amber-50/95 rounded-2xl border-2 border-amber-200 text-left">
@@ -2785,6 +2802,9 @@
         this.letterPool = [];
         this.isSolved = false;
         this.speechSequenceToken = 0;
+        this.wordStartTime = Date.now();
+        this.attemptsCount = 1;
+        this.hintUsed = false;
 
         this.cacheDom();
         this.renderCategoryTabs();
@@ -2922,6 +2942,9 @@
           lettersPoolContainer: document.getElementById('letters-pool'),
           resetLettersBtn: document.getElementById('reset-letters-btn'),
           hintBtn: document.getElementById('hint-btn'),
+          hintAlertToast: document.getElementById('hint-alert-toast'),
+          hintAlertText: document.getElementById('hint-alert-text'),
+          operationTip: document.getElementById('operation-tip'),
           prevWordBtn: document.getElementById('prev-word-btn'),
           nextWordBtn: document.getElementById('next-word-btn'),
           shuffleWordsBtn: document.getElementById('shuffle-words-btn'),
@@ -2937,6 +2960,9 @@
           feedbackWordText: document.getElementById('feedback-word-text'),
           feedbackWordTranslation: document.getElementById('feedback-word-translation'),
           feedbackWordPhonics: document.getElementById('feedback-word-phonics'),
+          feedbackStatsRow: document.getElementById('feedback-stats-row'),
+          feedbackTimeText: document.getElementById('feedback-time-text'),
+          feedbackAttemptsText: document.getElementById('feedback-attempts-text'),
           feedbackBtnSpell: document.getElementById('feedback-btn-spell'),
           feedbackBtnEn: document.getElementById('feedback-btn-en'),
           feedbackBtnZh: document.getElementById('feedback-btn-zh')
@@ -3081,6 +3107,9 @@
         if (index >= this.words.length) index = 0;
         this.currentIndex = index;
         this.isSolved = false;
+        this.wordStartTime = Date.now();
+        this.attemptsCount = 1;
+        this.hintUsed = false;
 
         const wordData = this.getCurrentWord();
         const wordClean = this.getDisplayWord(wordData);
@@ -3261,8 +3290,39 @@
         this.renderBoard();
       }
 
+      showHintAlert(text) {
+        if (!this.dom.hintAlertToast) return;
+        if (this.dom.hintAlertText) this.dom.hintAlertText.textContent = text;
+        this.dom.hintAlertToast.classList.remove('hidden');
+        if (this.dom.operationTip) this.dom.operationTip.classList.add('opacity-0');
+        sfx.playTryAgain();
+
+        if (this.hintToastTimer) clearTimeout(this.hintToastTimer);
+        this.hintToastTimer = setTimeout(() => {
+          this.dom.hintAlertToast.classList.add('hidden');
+          if (this.dom.operationTip) this.dom.operationTip.classList.remove('opacity-0');
+        }, 2800);
+      }
+
       giveHint() {
         if (this.isSolved) return;
+
+        // 檢查 Tim 是否有自己動手試過（至少框框內要有 1 個字母）
+        const filledSlotsCount = this.slots.filter(s => s !== null).length;
+        if (filledSlotsCount === 0) {
+          this.showHintAlert('💪 Tim 先自己試試看，至少放一個字母進框框才能求助提示喔！');
+          // 晃動字母池提醒他動手排
+          this.dom.lettersPoolContainer.classList.add('animate-shake');
+          setTimeout(() => this.dom.lettersPoolContainer.classList.remove('animate-shake'), 500);
+          return;
+        }
+
+        // 不讓他一直連續按（一題限制最多使用 1 次提示）
+        if (this.hintUsed) {
+          this.showHintAlert('⭐ 這題已經給過一次提示囉！剩下的空位 Tim 一定可以自己拼出來！');
+          return;
+        }
+
         const currentWord = this.getDisplayWord(this.getCurrentWord());
         
         for (let i = 0; i < currentWord.length; i++) {
@@ -3287,6 +3347,7 @@
 
             if (availablePoolItem) {
               this.placeLetterInSlot(availablePoolItem.id, i);
+              this.hintUsed = true;
               const slotElements = this.dom.slotsContainer.children;
               if (slotElements[i]) {
                 slotElements[i].classList.add('ring-4', 'ring-emerald-400');
@@ -3317,6 +3378,10 @@
         sfx.playSuccess();
         launchConfetti();
 
+        // 統計秒數與嘗試次數
+        const elapsedSec = Math.max(1, Math.round((Date.now() - this.wordStartTime) / 1000));
+        const attempts = this.attemptsCount;
+
         const profile = this.profiles[this.currentUser];
         const word = this.getCurrentWord();
         const isFirstTime = !profile.completed[word.id];
@@ -3344,9 +3409,20 @@
         const praiseZh = praiseTemplate.zh.replace('{name}', this.currentUser);
 
         this.dom.feedbackEmoji.textContent = '🌟 🎉 🏆';
-        this.dom.feedbackTitle.textContent = praiseZh;
-        this.dom.feedbackSubtitle.textContent = praiseEn;
+        this.dom.feedbackTitle.textContent = `${praiseZh}！`;
+        this.dom.feedbackSubtitle.textContent = `${praiseEn} You finished in ${elapsedSec}s with ${attempts} ${attempts === 1 ? 'try' : 'tries'}!`;
         this.dom.feedbackActionBtn.textContent = '挑戰下一個單字 ➡️';
+
+        // 呈現本次作答戰績 (花費時間與嘗試次數)
+        if (this.dom.feedbackStatsRow) {
+          this.dom.feedbackStatsRow.classList.remove('hidden');
+        }
+        if (this.dom.feedbackTimeText) {
+          this.dom.feedbackTimeText.textContent = elapsedSec;
+        }
+        if (this.dom.feedbackAttemptsText) {
+          this.dom.feedbackAttemptsText.textContent = attempts;
+        }
 
         // 渲染單字強化複習區 (包含縮圖、正確拼字方塊、中文)
         if (this.dom.feedbackWordBox) {
@@ -3378,13 +3454,15 @@
         this.dom.feedbackCard.classList.remove('hidden');
 
         // 自動循序語音引導：
-        // 1. 英文讚美 ("Awesome job, Tim!")
+        // 1. 英文讚美與用時 ("Awesome job, Tim! You finished in 5 seconds!")
         // 2. 拼字發音 ("c - a - p, cap!")
-        // 3. 中文發音 ("鴨舌帽")
+        // 3. 中文發音與次數 ("花了 5 秒，嘗試 1 次成功！鴨舌帽")
         const currentToken = ++this.speechSequenceToken;
+        const spokenPraiseEn = `${praiseEn}! You finished in ${elapsedSec} seconds!`;
+        const spokenStatsZh = `花了 ${elapsedSec} 秒，嘗試 ${attempts} 次成功！${word.translation}`;
         setTimeout(() => {
           if (this.speechSequenceToken !== currentToken) return;
-          this.speak(praiseEn, 0.95, () => {
+          this.speak(spokenPraiseEn, 0.95, () => {
             if (this.speechSequenceToken !== currentToken) return;
             setTimeout(() => {
               if (this.speechSequenceToken !== currentToken) return;
@@ -3392,7 +3470,7 @@
                 if (this.speechSequenceToken !== currentToken) return;
                 setTimeout(() => {
                   if (this.speechSequenceToken !== currentToken) return;
-                  this.speakZh(word.translation);
+                  this.speakZh(spokenStatsZh);
                 }, 350);
               });
             }, 350);
@@ -3401,6 +3479,7 @@
       }
 
       handleFailure() {
+        this.attemptsCount++;
         sfx.playTryAgain();
 
         this.dom.slotsContainer.classList.add('animate-shake');
@@ -3417,9 +3496,12 @@
         });
         this.saveProfiles();
 
-        // 答錯時隱藏複習面板，專心打氣重試
+        // 答錯時隱藏複習面板與戰報面板，專心打氣重試
         if (this.dom.feedbackWordBox) {
           this.dom.feedbackWordBox.classList.add('hidden');
+        }
+        if (this.dom.feedbackStatsRow) {
+          this.dom.feedbackStatsRow.classList.add('hidden');
         }
 
         const enc = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
