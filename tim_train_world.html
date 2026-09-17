@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tim 的環遊世界鐵道大冒險 | Tim's Global Railway Adventure</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rail: {
+              gold: '#F59E0B',
+              navy: '#1E293B',
+              orange: '#EA580C',
+              cyan: '#06B6D4',
+              steel: '#334155'
+            }
+          },
+          animation: {
+            'train-run': 'trainShake 0.4s infinite alternate ease-in-out',
+            'track-flow': 'trackMove 0.8s linear infinite',
+            'cloud-float': 'cloudFloat 20s linear infinite',
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            trainShake: {
+              '0%': { transform: 'translateY(0px)' },
+              '100%': { transform: 'translateY(-2px)' }
+            },
+            trackMove: {
+              '0%': { transform: 'translateX(0)' },
+              '100%': { transform: 'translateX(-40px)' }
+            },
+            cloudFloat: {
+              '0%': { transform: 'translateX(100%)' },
+              '100%': { transform: 'translateX(-120%)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .track-line {
+      background-size: 24px 100%;
+      background-image: linear-gradient(90deg, #475569 4px, transparent 4px, transparent 12px, #475569 12px, transparent 12px);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+  <!-- 頂部導覽列：駕駛艙狀態、里程數、金幣與等級 -->
+  <header class="w-full max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
+    <!-- 車長身份 -->
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/30 border border-amber-300">
+          🚅
+        </div>
+        <span class="absolute -bottom-1 -right-1 bg-blue-600 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-slate-900 text-white">Tim</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-black tracking-wide text-amber-400">環遊世界鐵道大冒險</h1>
+          <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 hidden sm:inline">小六英語會考級</span>
+        </div>
+        <div class="text-xs text-slate-400 flex items-center gap-2">
+          <span>特等車長：<strong class="text-slate-200">Tim</strong></span>
+          <span class="text-slate-600">•</span>
+          <span id="current-train-name" class="text-cyan-400 font-semibold">台灣高鐵 700T</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 數值面板 (里程數、代幣、圖鑑捷徑) -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <!-- 總里程 -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-inner">
+        <span class="text-lg">🚩</span>
+        <div>
+          <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">總里程</div>
+          <div class="text-xs sm:text-sm font-black text-amber-400 font-mono"><span id="mileage-val">0</span> km</div>
+        </div>
+      </div>
+
+      <!-- 鐵道金幣 -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-inner">
+        <span class="text-lg">🪙</span>
+        <div>
+          <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">鐵道金幣</div>
+          <div class="text-xs sm:text-sm font-black text-yellow-300 font-mono"><span id="coins-val">120</span></div>
+        </div>
+      </div>
+
+      <!-- 車庫按鈕 -->
+      <button onclick="openGarageModal()" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-md shadow-cyan-600/30 transition-all hover:scale-105 active:scale-95">
+        <span>🚉</span>
+        <span class="hidden sm:inline">我的車庫</span>
+      </button>
+
+      <!-- 護照簽證按鈕 -->
+      <button onclick="openPassportModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
+        <span>🛂</span>
+        <span class="hidden sm:inline">護照</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 路線選擇切換 (世界 6 大洲鐵路傳奇) -->
+  <nav class="w-full max-w-7xl mx-auto px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+    <button onclick="switchRoute('tw')" id="route-tab-tw" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30">
+      <span>🇹🇼</span> 台灣高鐵 (THSR)
+    </button>
+    <button onclick="switchRoute('jp')" id="route-tab-jp" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+      <span>🇯🇵</span> 日本新幹線 (Shinkansen)
+    </button>
+    <button onclick="switchRoute('uk')" id="route-tab-uk" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+      <span>🇬🇧</span> 倫敦地下鐵與歐洲之星 (Tube & Eurostar)
+    </button>
+    <button onclick="switchRoute('fr')" id="route-tab-fr" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+      <span>🇫🇷🇨🇭</span> 法國高鐵與瑞士冰河列車 (TGV & Alps)
+    </button>
+    <button onclick="switchRoute('us')" id="route-tab-us" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+      <span>🇺🇸</span> 紐約地鐵與美鐵快車 (NYC Metro & Amtrak)
+    </button>
+    <button onclick="switchRoute('maglev')" id="route-tab-maglev" class="route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+      <span>⚡</span> 未來超導磁浮列車 (Hyper Maglev)
+    </button>
+  </nav>
+
+  <!-- 主舞台：列車駕駛視角 + 單字關卡挑戰 -->
+  <main class="w-full max-w-7xl mx-auto px-4 py-2 flex-1 flex flex-col gap-4">
+
+    <!-- 景觀與行駛動態面板 -->
+    <div class="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-gradient-to-b from-sky-900 via-indigo-950 to-slate-900 border-2 border-slate-700 shadow-2xl flex flex-col justify-between p-4">
+      
+      <!-- 天空背景裝飾：雲朵、太陽/月亮、遠景地標 -->
+      <div class="absolute inset-0 pointer-events-none opacity-40">
+        <div id="sky-landmark" class="absolute right-12 top-4 text-6xl select-none filter drop-shadow-lg">🏢</div>
+        <div class="absolute top-2 left-1/4 text-2xl animate-cloud-float">☁️</div>
+        <div class="absolute top-6 left-2/3 text-3xl animate-cloud-float" style="animation-duration: 28s;">☁️</div>
+        <div class="absolute bottom-10 left-0 right-0 h-16 bg-gradient-to-t from-slate-900/90 to-transparent"></div>
+      </div>
+
+      <!-- 頂部資訊：目前站點與下一站 -->
+      <div class="relative z-10 flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-700">
+          <span class="text-xs text-amber-400 font-bold uppercase">Departure:</span>
+          <span id="station-curr" class="text-sm font-black text-white">台北車站 (Taipei)</span>
+          <span class="text-slate-500">➜</span>
+          <span class="text-xs text-cyan-400 font-bold uppercase">Next:</span>
+          <span id="station-next" class="text-sm font-black text-cyan-200">台中 (Taichung)</span>
+        </div>
+
+        <!-- 儀表板：時速表 + 鳴笛按鈕 -->
+        <div class="flex items-center gap-2">
+          <div class="bg-slate-900/80 backdrop-blur px-3 py-1 rounded-xl border border-slate-700 flex items-center gap-2 font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs text-slate-400">SPEED:</span>
+            <span id="train-speed" class="text-base sm:text-lg font-black text-emerald-400">300</span>
+            <span class="text-[10px] text-slate-400">KM/H</span>
+          </div>
+
+          <!-- 鳴笛按鈕 (Web Audio API 合成擬真氣笛音) -->
+          <button onclick="playHornSound()" title="按下鳴笛！" class="bg-amber-500 hover:bg-amber-400 active:scale-90 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-black shadow-lg shadow-amber-500/30 flex items-center gap-1 transition-all">
+            <span>📢</span>
+            <span class="hidden sm:inline">鳴笛 (Horn)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 鐵道動態與列車模型 -->
+      <div class="relative z-10 w-full mt-auto">
+        <!-- 列車本體動態 -->
+        <div class="flex items-end justify-center mb-1">
+          <div id="train-avatar-container" class="animate-train-run flex items-center filter drop-shadow-xl transition-transform duration-300">
+            <!-- 列車外觀由 JS 依車種注入高精緻 SVG -->
+            <div id="train-display-svg" class="w-72 sm:w-96"></div>
+          </div>
+        </div>
+
+        <!-- 鐵軌與枕木流動動畫 -->
+        <div class="relative w-full h-4 bg-slate-800 rounded-full border-t-2 border-slate-600 overflow-hidden shadow-inner flex items-center">
+          <div id="track-rail-glow" class="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent"></div>
+          <div class="w-[200%] h-full flex items-center animate-track-flow track-line opacity-75"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 遊戲模式與題目主卡片區 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+      
+      <!-- 左側：鐵路沿線站點路網圖 (4 欄) -->
+      <div class="lg:col-span-4 bg-slate-800/80 rounded-2xl p-4 border border-slate-700 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-black text-slate-200 flex items-center gap-2">
+              <span>🗺️</span> 鐵道路線圖 (Route Progress)
+            </h2>
+            <span id="route-level-name" class="text-xs bg-amber-400/10 text-amber-400 font-bold px-2 py-0.5 rounded-md border border-amber-400/20">台灣西部縱貫高鐵</span>
+          </div>
+
+          <!-- 站點清單 -->
+          <div id="stations-list-container" class="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+            <!-- 由 JS 自動渲染站點 -->
+          </div>
+        </div>
+
+        <!-- 車長提示卡 -->
+        <div class="mt-4 p-3 bg-slate-900/60 rounded-xl border border-slate-700/60 text-xs text-slate-400">
+          <div class="text-amber-400 font-bold flex items-center gap-1 mb-1">
+            <span>💡</span> 車長 Tim 的英文通關秘訣：
+          </div>
+          <p id="station-trivia">全速行駛時請專注聽發音，每答對一個高階單字即可為高鐵注入 100% 潔淨動能並抵達下一站！</p>
+        </div>
+      </div>
+
+      <!-- 右側：核心英語挑戰互動台 (8 欄) -->
+      <div class="lg:col-span-8 bg-slate-800/90 rounded-2xl p-4 sm:p-6 border border-slate-700 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- 卡片頂部：單字進度、發音按鈕、情境主題 -->
+        <div class="flex items-center justify-between border-b border-slate-700 pb-3 gap-2 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span id="word-category-badge" class="px-2.5 py-1 rounded-lg text-xs font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              🚉 車站與旅行核心單字
+            </span>
+            <span id="word-part-of-speech" class="text-xs font-mono text-slate-400 font-semibold italic">[n.] 名詞</span>
+          </div>
+
+          <!-- 模式切換：拼字修理 / 選擇衝刺 / 例句克漏字 -->
+          <div class="flex items-center gap-1 bg-slate-900/70 p-1 rounded-xl border border-slate-700">
+            <button onclick="setGameMode('spelling')" id="mode-btn-spelling" class="game-mode-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm">
+              🔨 軌道拼字
+            </button>
+            <button onclick="setGameMode('quiz')" id="mode-btn-quiz" class="game-mode-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+              ⚡ 綠燈衝刺 (選擇)
+            </button>
+            <button onclick="setGameMode('cloze')" id="mode-btn-cloze" class="game-mode-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+              📖 例句填空
+            </button>
+          </div>
+        </div>
+
+        <!-- 核心題目互動區 -->
+        <div id="challenge-container" class="my-4 flex-1 flex flex-col justify-center items-center text-center">
+          
+          <!-- 單字中文與情境提示 -->
+          <div class="mb-4">
+            <div id="word-definition" class="text-2xl sm:text-3xl font-black text-white tracking-wide mb-1">
+              月台；講台
+            </div>
+            <div id="word-phonetic-hint" class="text-sm text-cyan-300 font-mono tracking-wider">
+              /ˈplæt.fɔːm/
+            </div>
+          </div>
+
+          <!-- 語音朗讀區 (高音質 Web Speech) -->
+          <div class="flex items-center gap-3 mb-6">
+            <button onclick="speakCurrentWord()" title="點擊發音" class="group flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black px-4 py-2 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all text-sm">
+              <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+              <span>美式自然發音</span>
+            </button>
+            <button onclick="speakCurrentWord('en-GB')" title="英式發音 (倫敦地鐵風格)" class="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl text-xs font-bold transition-all">
+              <span>🇬🇧</span>
+              <span>英式發音</span>
+            </button>
+          </div>
+
+          <!-- 互動內容容器 (由不同模式動態填入) -->
+          <div id="dynamic-mode-content" class="w-full max-w-xl">
+            <!-- 內容隨模式切換 -->
+          </div>
+
+          <!-- 雙語例句展示 (小六閱讀強化) -->
+          <div class="w-full max-w-xl mt-6 p-3.5 bg-slate-900/70 rounded-xl border border-slate-700/80 text-left">
+            <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span>📝</span> 鐵道旅行實用例句 (Context Sentence)
+            </div>
+            <p id="word-example-en" class="text-xs sm:text-sm text-slate-200 font-medium">
+              Passengers are waiting on <span class="text-amber-400 font-bold underline decoration-amber-400/50">platform</span> 3 for the high-speed train.
+            </p>
+            <p id="word-example-zh" class="text-xs text-slate-400 mt-1">
+              乘客們正在 3 號月台等待高鐵到來。
+            </p>
+          </div>
+
+        </div>
+
+        <!-- 卡片底部：回饋狀態與下一題導覽 -->
+        <div class="flex items-center justify-between border-t border-slate-700 pt-3 gap-2">
+          <div id="feedback-message" class="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-slate-400">
+            <span>🚄</span> 拼好英文單字，火車即可鳴笛進站！
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="skipWord()" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold transition-all">
+              下一班車 ⏭️
+            </button>
+            <button id="submit-verify-btn" onclick="verifyAnswer()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+              全速通關 🏁
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 底部版權與返回總覽 -->
+  <footer class="w-full max-w-7xl mx-auto px-4 py-3 text-center text-xs text-slate-500 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
+    <div>Tim's Global Railway Adventure • 國小六年級 1200 單字與世界鐵道探索</div>
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="text-cyan-400 hover:underline">返回單字首頁</a>
+      <span>•</span>
+      <a href="tim_en_learn.html" class="text-amber-400 hover:underline">Tim 的個人首頁</a>
+    </div>
+  </footer>
+
+  <!-- ==================== 彈出視窗：Tim 的車庫 (Garage) ==================== -->
+  <div id="garage-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-3xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🚉</span>
+          <h3 class="text-lg font-black text-white">Tim 的世界列車車庫 (Fleet Collection)</h3>
+        </div>
+        <button onclick="closeGarageModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="py-4 overflow-y-auto flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4" id="garage-trains-list">
+        <!-- 由 JS 渲染列車清單與解鎖條件 -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <div>累積里程越長、答對單字越多，就能解鎖全世界最快的超級列車！</div>
+        <button onclick="closeGarageModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈出視窗：鐵道護照與印章 (Passport) ==================== -->
+  <div id="passport-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🛂</span>
+          <h3 class="text-lg font-black text-white">Tim 的世界鐵道旅行護照 (Railway Passport)</h3>
+        </div>
+        <button onclick="closePassportModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="py-4 overflow-y-auto flex-1">
+        <div class="bg-amber-900/20 border border-amber-500/30 rounded-2xl p-4 mb-4 flex items-center gap-4">
+          <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-dashed border-amber-400 flex items-center justify-center text-3xl">
+            👦
+          </div>
+          <div>
+            <div class="text-sm font-black text-amber-300">特等列車長：Tim</div>
+            <div class="text-xs text-slate-300 mt-0.5">已征服站點：<span id="passport-stations-count" class="font-bold text-amber-400">1</span> 站</div>
+            <div class="text-xs text-slate-400 mt-0.5">已學會單字數：<span id="passport-words-count" class="font-bold text-cyan-400">0</span> 個高階英文單字</div>
+          </div>
+        </div>
+
+        <h4 class="text-xs font-black uppercase text-slate-400 mb-2 tracking-wider">世界鐵道入國紀念紀念戳章：</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="passport-stamps-grid">
+          <!-- JS 渲染各大站印章 -->
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button onclick="closePassportModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-black rounded-xl text-xs">關閉護照</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. Web Audio API 音效引擎 (免外部檔)
+    // ==========================================
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playHornSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'triangle';
+
+        // 歐洲與台灣高鐵雙音合弦 (F4 349Hz + A4 440Hz)
+        osc1.frequency.setValueAtTime(349.2, now);
+        osc2.frequency.setValueAtTime(440.0, now);
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now + 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 1.2);
+        osc2.stop(now + 1.2);
+      } catch (e) {
+        console.warn('Audio not supported:', e);
+      }
+    }
+
+    function playSuccessSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.35);
+        });
+      } catch (e) {}
+    }
+
+    function playFailSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 2. 路線與小六英文單字庫
+    // ==========================================
+    const RAIL_DATA = {
+      tw: {
+        id: 'tw',
+        name: '台灣高鐵 (THSR)',
+        trainName: '台灣高鐵 700T',
+        icon: '🇹🇼',
+        landmark: '🏢',
+        stations: [
+          { code: 'TPE', name: '台北 (Taipei)', km: 0 },
+          { code: 'TCH', name: '台中 (Taichung)', km: 165 },
+          { code: 'CHY', name: '嘉義 (Chiayi)', km: 251 },
+          { code: 'TNN', name: '台南 (Tainan)', km: 313 },
+          { code: 'ZY', name: '左營 (Zuoying)', km: 345 }
+        ],
+        words: [
+          {
+            word: 'platform',
+            phonetic: '/ˈplæt.fɔːm/',
+            pos: '[n.] 名詞',
+            category: '車站設施',
+            zh: '月台；講台',
+            options: ['月台；講台', '行李架', '車廂號碼', '售票窗口'],
+            exampleEn: 'Please stand behind the yellow line on the platform.',
+            exampleZh: '在月台上時，請站在黃線後面。',
+            clozeEn: 'Please stand behind the yellow line on the ______.',
+            clozeAnswer: 'platform'
+          },
+          {
+            word: 'ticket',
+            phonetic: '/ˈtɪk.ɪt/',
+            pos: '[n.] 名詞',
+            category: '旅行手續',
+            zh: '車票；入場券',
+            options: ['車票；入場券', '列車時刻表', '指南針', '司機'],
+            exampleEn: 'Tim showed his high-speed rail ticket to the conductor.',
+            exampleZh: 'Tim 把他的高鐵車票拿給列車長查驗。',
+            clozeEn: 'Tim showed his high-speed rail ______ to the conductor.',
+            clozeAnswer: 'ticket'
+          },
+          {
+            word: 'express',
+            phonetic: '/ɪkˈspres/',
+            pos: '[adj./n.] 特快車',
+            category: '列車類型',
+            zh: '特快的；特快列車',
+            options: ['特快的；特快列車', '緩慢行駛的', '故障待修的', '貨運專用車'],
+            exampleEn: 'The express train takes only 90 minutes from Taipei to Zuoying.',
+            exampleZh: '這班直達特快車從台北到左營只要 90 分鐘。',
+            clozeEn: 'The ______ train takes only 90 minutes from Taipei to Zuoying.',
+            clozeAnswer: 'express'
+          },
+          {
+            word: 'passenger',
+            phonetic: '/ˈpæs.ən.dʒər/',
+            pos: '[n.] 名詞',
+            category: '旅客人員',
+            zh: '乘客；旅客',
+            options: ['乘客；旅客', '鐵道工程師', '列車維修員', '站長'],
+            exampleEn: 'Every passenger must wear a seatbelt when required.',
+            exampleZh: '每位乘客在需要時都必須繫好安全帶。',
+            clozeEn: 'Every ______ must wear a seatbelt when required.',
+            clozeAnswer: 'passenger'
+          },
+          {
+            word: 'conductor',
+            phonetic: '/kənˈdʌk.tər/',
+            pos: '[n.] 名詞',
+            category: '鐵道職務',
+            zh: '列車長；指揮家',
+            options: ['列車長；指揮家', '行李搬運員', '清潔人員', '廣播播音員'],
+            exampleEn: 'The conductor checked our tickets with a warm smile.',
+            exampleZh: '列車長帶著親切的微笑為我們驗票。',
+            clozeEn: 'The ______ checked our tickets with a warm smile.',
+            clozeAnswer: 'conductor'
+          },
+          {
+            word: 'schedule',
+            phonetic: '/ˈskedʒ.uːl/',
+            pos: '[n.] 名詞',
+            category: '乘車規劃',
+            zh: '時間表；行事曆',
+            options: ['時間表；行事曆', '行車地圖', '路線標誌', '月台廣播'],
+            exampleEn: 'Let’s check the train schedule to see when the next train leaves.',
+            exampleZh: '我們來看看火車時刻表，看看下一班車何時出發。',
+            clozeEn: 'Let’s check the train ______ to see when the next train leaves.',
+            clozeAnswer: 'schedule'
+          }
+        ]
+      },
+
+      jp: {
+        id: 'jp',
+        name: '日本新幹線 (Shinkansen)',
+        trainName: '新幹線 E5 系列「隼號」(Hayabusa)',
+        icon: '🇯🇵',
+        landmark: '🗻',
+        stations: [
+          { code: 'TYO', name: '東京 (Tokyo)', km: 0 },
+          { code: 'NGY', name: '名古屋 (Nagoya)', km: 366 },
+          { code: 'KYO', name: '京都 (Kyoto)', km: 513 },
+          { code: 'OSA', name: '大阪 (Osaka)', km: 552 },
+          { code: 'HKD', name: '函館 (Hakodate)', km: 1100 }
+        ],
+        words: [
+          {
+            word: 'bullet',
+            phonetic: '/ˈbʊl.ɪt/',
+            pos: '[n.] 名詞',
+            category: '高鐵象徵',
+            zh: '子彈 (子彈列車)',
+            options: ['子彈 (子彈列車)', '火箭推進器', '磁石', '鐵軌枕木'],
+            exampleEn: 'The bullet train in Japan can travel over 320 km/h.',
+            exampleZh: '日本的子彈列車時速可以超過 320 公里。',
+            clozeEn: 'The ______ train in Japan can travel over 320 km/h.',
+            clozeAnswer: 'bullet'
+          },
+          {
+            word: 'mountain',
+            phonetic: '/ˈmaʊn.tɪn/',
+            pos: '[n.] 名詞',
+            category: '自然地理',
+            zh: '山；山脈 (富士山)',
+            options: ['山；山脈', '海灣', '沙漠', '平原'],
+            exampleEn: 'Tim saw Mount Fuji, the most famous mountain in Japan, from the train window.',
+            exampleZh: 'Tim 從火車車窗看到了日本最著名的山脈——富士山。',
+            clozeEn: 'Tim saw Mount Fuji, the most famous ______ in Japan.',
+            clozeAnswer: 'mountain'
+          },
+          {
+            word: 'tunnel',
+            phonetic: '/ˈtʌn.əl/',
+            pos: '[n.] 名詞',
+            category: '鐵道工程',
+            zh: '隧道；地道',
+            options: ['隧道；地道', '高架橋', '車站大廳', '鐵路平交道'],
+            exampleEn: 'The train entered a long undersea tunnel connecting the two islands.',
+            exampleZh: '列車駛入了一條連接兩座島嶼的長長海底隧道。',
+            clozeEn: 'The train entered a long undersea ______ connecting the two islands.',
+            clozeAnswer: 'tunnel'
+          },
+          {
+            word: 'scenery',
+            phonetic: '/ˈsiː.nər.i/',
+            pos: '[n.] 名詞',
+            category: '景觀文化',
+            zh: '風景；景色',
+            options: ['風景；景色', '天氣預報', '交通號誌', '乘車禮儀'],
+            exampleEn: 'The scenery of snow and cherry blossoms was breathtaking.',
+            exampleZh: '白雪與櫻花的風景令人嘆為觀止。',
+            clozeEn: 'The ______ of snow and cherry blossoms was breathtaking.',
+            clozeAnswer: 'scenery'
+          },
+          {
+            word: 'speed',
+            phonetic: '/spiːd/',
+            pos: '[n.] 名詞',
+            category: '速度性能',
+            zh: '速度；迅速',
+            options: ['速度；迅速', '重量', '高度', '長度'],
+            exampleEn: 'High speed trains are safe and efficient for long journeys.',
+            exampleZh: '高鐵對於長途旅行來說既安全又有效率。',
+            clozeEn: 'High ______ trains are safe and efficient for long journeys.',
+            clozeAnswer: 'speed'
+          },
+          {
+            word: 'traditional',
+            phonetic: '/trəˈdɪʃ.ən.əl/',
+            pos: '[adj.] 形容詞',
+            category: '文化體驗',
+            zh: '傳統的；慣例的',
+            options: ['傳統的', '未來的', '昂貴的', '雜亂的'],
+            exampleEn: 'In Kyoto, you can see many traditional temples.',
+            exampleZh: '在京都，你可以看見許多傳統寺廟。',
+            clozeEn: 'In Kyoto, you can see many ______ temples.',
+            clozeAnswer: 'traditional'
+          }
+        ]
+      },
+
+      uk: {
+        id: 'uk',
+        name: '英國地下鐵與歐洲之星 (Tube & Eurostar)',
+        trainName: '歐洲之星高速列車 (Eurostar e320)',
+        icon: '🇬🇧',
+        landmark: '🏰',
+        stations: [
+          { code: 'LON', name: '倫敦聖潘克拉斯 (London St Pancras)', km: 0 },
+          { code: 'LIL', name: '里爾 (Lille Europe)', km: 260 },
+          { code: 'BRU', name: '布魯塞爾 (Brussels)', km: 373 },
+          { code: 'PAR', name: '巴黎北站 (Paris Gare du Nord)', km: 492 },
+          { code: 'AMS', name: '阿姆斯特丹 (Amsterdam)', km: 580 }
+        ],
+        words: [
+          {
+            word: 'underground',
+            phonetic: '/ˌʌn.dəˈɡraʊnd/',
+            pos: '[n.] 地鐵',
+            category: '城市交通',
+            zh: '地下的；地鐵(Tube)',
+            options: ['地下的；地鐵', '天上的', '水上的', '山頂的'],
+            exampleEn: 'The London Underground is the oldest metro system in the world.',
+            exampleZh: '倫敦地下鐵是世界上最古老的地鐵系統。',
+            clozeEn: 'The London ______ is the oldest metro system in the world.',
+            clozeAnswer: 'underground'
+          },
+          {
+            word: 'luggage',
+            phonetic: '/ˈlʌɡ.ɪdʒ/',
+            pos: '[n.] 名詞',
+            category: '旅行用品',
+            zh: '行李；皮箱',
+            options: ['行李；皮箱', '護照夾', '雨傘', '相機包'],
+            exampleEn: 'Please place your heavy luggage in the overhead rack.',
+            exampleZh: '請將您的大件行李放在頭頂置物架上。',
+            clozeEn: 'Please place your heavy ______ in the overhead rack.',
+            clozeAnswer: 'luggage'
+          },
+          {
+            word: 'departure',
+            phonetic: '/dɪˈpɑː.tʃər/',
+            pos: '[n.] 名詞',
+            category: '機場車站必備',
+            zh: '出發；離開',
+            options: ['出發；離開', '抵達終點', '轉車過境', '取消退票'],
+            exampleEn: 'Look at the departure board to find which platform our train is on.',
+            exampleZh: '看看出發資訊看板，確認我們的列車在哪個月台。',
+            clozeEn: 'Look at the ______ board to find which platform our train is on.',
+            clozeAnswer: 'departure'
+          },
+          {
+            word: 'arrival',
+            phonetic: '/əˈraɪ.vəl/',
+            pos: '[n.] 名詞',
+            category: '機場車站必備',
+            zh: '抵達；到達',
+            options: ['抵達；到達', '延誤起飛', '轉機', '退票'],
+            exampleEn: 'Our estimated time of arrival in Paris is 3:30 PM.',
+            exampleZh: '我們預計抵達巴黎的時間是下午 3:30。',
+            clozeEn: 'Our estimated time of ______ in Paris is 3:30 PM.',
+            clozeAnswer: 'arrival'
+          },
+          {
+            word: 'channel',
+            phonetic: '/ˈtʃæn.əl/',
+            pos: '[n.] 名詞',
+            category: '地理名詞',
+            zh: '海峽；頻道 (英吉利海峽)',
+            options: ['海峽；頻道', '山脈', '平原', '瀑布'],
+            exampleEn: 'The Eurostar crosses beneath the English Channel tunnel.',
+            exampleZh: '歐洲之星列車穿過英吉利海峽海底隧道。',
+            clozeEn: 'The Eurostar crosses beneath the English ______ tunnel.',
+            clozeAnswer: 'channel'
+          },
+          {
+            word: 'international',
+            phonetic: '/ˌɪn.təˈnæʃ.ən.əl/',
+            pos: '[adj.] 形容詞',
+            category: '跨國視野',
+            zh: '國際的；跨國的',
+            options: ['國際的；跨國的', '局部的', '本地的', '鄉村的'],
+            exampleEn: 'St Pancras is a busy international railway station.',
+            exampleZh: '聖潘克拉斯是一座繁忙的國際鐵路大站。',
+            clozeEn: 'St Pancras is a busy ______ railway station.',
+            clozeAnswer: 'international'
+          }
+        ]
+      },
+
+      fr: {
+        id: 'fr',
+        name: '法國高鐵與瑞士阿爾卑斯 (TGV & Alps)',
+        trainName: '法國高速列車 TGV Duplex (雙層)',
+        icon: '🇫🇷',
+        landmark: '🏔️',
+        stations: [
+          { code: 'PAR', name: '巴黎里昂車站 (Paris Gare de Lyon)', km: 0 },
+          { code: 'LYO', name: '里昂 (Lyon Part-Dieu)', km: 466 },
+          { code: 'GVA', name: '日內瓦 (Geneva)', km: 580 },
+          { code: 'ZER', name: '策馬特 (Zermatt 馬特洪峰)', km: 740 },
+          { code: 'STC', name: '聖莫里茲 (St. Moritz)', km: 920 }
+        ],
+        words: [
+          {
+            word: 'destination',
+            phonetic: '/ˌdes.tɪˈneɪ.ʃən/',
+            pos: '[n.] 名詞',
+            category: '旅行目的地',
+            zh: '目的地；終點站',
+            options: ['目的地；終點站', '起點站', '臨時加開車', '收費站'],
+            exampleEn: 'Our final destination today is the beautiful Swiss Alps.',
+            exampleZh: '我們今天的最終目的地是美麗的瑞士阿爾卑斯山。',
+            clozeEn: 'Our final ______ today is the beautiful Swiss Alps.',
+            clozeAnswer: 'destination'
+          },
+          {
+            word: 'glacier',
+            phonetic: '/ˈɡlæs.i.ər/',
+            pos: '[n.] 名詞',
+            category: '自然奇觀',
+            zh: '冰河；冰川',
+            options: ['冰河；冰川', '火山', '熱帶雨林', '沙漠'],
+            exampleEn: 'The Glacier Express takes passengers through snowy mountains.',
+            exampleZh: '冰河列車載著乘客穿行於白雪覆蓋的高山之間。',
+            clozeEn: 'The ______ Express takes passengers through snowy mountains.',
+            clozeAnswer: 'glacier'
+          },
+          {
+            word: 'bridge',
+            phonetic: '/brɪdʒ/',
+            pos: '[n.] 名詞',
+            category: '經典建築',
+            zh: '橋樑；高架鐵橋',
+            options: ['橋樑', '信號燈', '候車室', '轉轍器'],
+            exampleEn: 'The train crossed a high stone bridge over the valley.',
+            exampleZh: '火車跨越了一座橫跨山谷的宏偉高架石橋。',
+            clozeEn: 'The train crossed a high stone ______ over the valley.',
+            clozeAnswer: 'bridge'
+          },
+          {
+            word: 'valley',
+            phonetic: '/ˈvæl.i/',
+            pos: '[n.] 名詞',
+            category: '自然地形',
+            zh: '山谷；溪谷',
+            options: ['山谷；溪谷', '海灘', '島嶼', '珊瑚礁'],
+            exampleEn: 'Look down into the green valley with colorful wild flowers.',
+            exampleZh: '往下看那片盛開著繽紛野花的綠色山谷。',
+            clozeEn: 'Look down into the green ______ with colorful wild flowers.',
+            clozeAnswer: 'valley'
+          },
+          {
+            word: 'electric',
+            phonetic: '/iˈlek.trɪk/',
+            pos: '[adj.] 形容詞',
+            category: '能源驅動',
+            zh: '電力的；電動的',
+            options: ['電力的', '蒸氣的', '燃油的', '手動的'],
+            exampleEn: 'Modern high speed trains run on clean electric power.',
+            exampleZh: '現代高鐵都是靠乾淨的電力驅動運轉。',
+            clozeEn: 'Modern high speed trains run on clean ______ power.',
+            clozeAnswer: 'electric'
+          },
+          {
+            word: 'journey',
+            phonetic: '/ˈdʒɜː.ni/',
+            pos: '[n.] 名詞',
+            category: '旅程探索',
+            zh: '旅行；旅程',
+            options: ['旅行；旅程', '地圖', '行李箱', '照相機'],
+            exampleEn: 'Have a pleasant and safe train journey with Tim!',
+            exampleZh: '祝你與 Tim 有一趟愉快又平安的鐵道之旅！',
+            clozeEn: 'Have a pleasant and safe train ______ with Tim!',
+            clozeAnswer: 'journey'
+          }
+        ]
+      },
+
+      us: {
+        id: 'us',
+        name: '美國紐約地鐵與美鐵 (NYC & Amtrak)',
+        trainName: '美鐵阿謝拉特快 (Amtrak Acela Express)',
+        icon: '🇺🇸',
+        landmark: '🗽',
+        stations: [
+          { code: 'NYC', name: '紐約大中央車站 (Grand Central)', km: 0 },
+          { code: 'PHL', name: '費城 (Philadelphia 30th St)', km: 153 },
+          { code: 'DC', name: '華盛頓特區聯合車站 (Washington DC)', km: 362 },
+          { code: 'BOS', name: '波士頓 (Boston South Station)', km: 740 },
+          { code: 'CHI', name: '芝加哥 (Chicago Union Station)', km: 1540 }
+        ],
+        words: [
+          {
+            word: 'subway',
+            phonetic: '/ˈsʌb.weɪ/',
+            pos: '[n.] 名詞',
+            category: '美式英文交通',
+            zh: '地鐵；地下鐵路',
+            options: ['地鐵；地下鐵路', '高速公路', '人行道', '腳踏車專用道'],
+            exampleEn: 'New Yorkers take the subway to go to school and work every day.',
+            exampleZh: '紐約人每天搭乘地鐵去上學與上班。',
+            clozeEn: 'New Yorkers take the ______ to go to school and work every day.',
+            clozeAnswer: 'subway'
+          },
+          {
+            word: 'capital',
+            phonetic: '/ˈkæp.ɪ.təl/',
+            pos: '[n.] 名詞',
+            category: '地理與國家',
+            zh: '首都；大寫字母',
+            options: ['首都；大寫字母', '偏遠小鎮', '港口碼頭', '國境邊界'],
+            exampleEn: 'Washington, D.C. is the capital city of the United States.',
+            exampleZh: '華盛頓特區是美國的首都。',
+            clozeEn: 'Washington, D.C. is the ______ city of the United States.',
+            clozeAnswer: 'capital'
+          },
+          {
+            word: 'museum',
+            phonetic: '/mjuːˈziː.əm/',
+            pos: '[n.] 名詞',
+            category: '文化建築',
+            zh: '博物館；展覽館',
+            options: ['博物館', '遊樂場', '體育館', '量販店'],
+            exampleEn: 'We took the train to visit the Smithsonian Air and Space Museum.',
+            exampleZh: '我們搭火車去參觀史密森尼國家航空航天博物館。',
+            clozeEn: 'We took the train to visit the Smithsonian Air and Space ______.',
+            clozeAnswer: 'museum'
+          },
+          {
+            word: 'signal',
+            phonetic: '/ˈsɪɡ.nəl/',
+            pos: '[n.] 名詞',
+            category: '行車安全',
+            zh: '信號；號誌',
+            options: ['信號；號誌', '煞車踏板', '汽笛聲', '集電弓'],
+            exampleEn: 'The railway signal changed from red to green, allowing the train to go.',
+            exampleZh: '鐵路號誌燈由紅轉綠，准許列車全速出發。',
+            clozeEn: 'The railway ______ changed from red to green, allowing the train to go.',
+            clozeAnswer: 'signal'
+          },
+          {
+            word: 'distance',
+            phonetic: '/ˈdɪs.təns/',
+            pos: '[n.] 名詞',
+            category: '計量單位',
+            zh: '距離；路程',
+            options: ['距離；路程', '時間', '重量', '速度'],
+            exampleEn: 'The distance between New York and Boston is about 350 kilometers.',
+            exampleZh: '紐約到波士頓的距離大約是 350 公里。',
+            clozeEn: 'The ______ between New York and Boston is about 350 kilometers.',
+            clozeAnswer: 'distance'
+          },
+          {
+            word: 'engine',
+            phonetic: '/ˈen.dʒɪn/',
+            pos: '[n.] 名詞',
+            category: '動力機械',
+            zh: '引擎；火車頭',
+            options: ['引擎；火車頭', '方向盤', '車輪軸承', '座椅'],
+            exampleEn: 'The strong locomotive engine pulled twelve passenger cars.',
+            exampleZh: '強大的火車車頭拉動了十二節客車車廂。',
+            clozeEn: 'The strong locomotive ______ pulled twelve passenger cars.',
+            clozeAnswer: 'engine'
+          }
+        ]
+      },
+
+      maglev: {
+        id: 'maglev',
+        name: '未來超導磁浮列車 (Hyper Maglev)',
+        trainName: '日本 L0 系超導磁浮列車 (603 km/h 紀錄車)',
+        icon: '⚡',
+        landmark: '🛸',
+        stations: [
+          { code: 'ML1', name: '未來中央基地 (Future Base)', km: 0 },
+          { code: 'ML2', name: '真空超導軌道站 (Vacuum Tube)', km: 280 },
+          { code: 'ML3', name: '極速測試終點 (603 Record St.)', km: 603 }
+        ],
+        words: [
+          {
+            word: 'magnetic',
+            phonetic: '/mæɡˈnet.ɪk/',
+            pos: '[adj.] 形容詞',
+            category: '高科技物理',
+            zh: '磁性的；有磁力的',
+            options: ['磁性的；有磁力的', '木質的', '摩擦力的', '脆弱的'],
+            exampleEn: 'Magnetic levitation trains float above the tracks with no friction.',
+            exampleZh: '磁浮列車懸浮於軌道上方，完全沒有車輪摩擦阻力。',
+            clozeEn: '______ levitation trains float above the tracks with no friction.',
+            clozeAnswer: 'Magnetic'
+          },
+          {
+            word: 'technology',
+            phonetic: '/tekˈnɒl.ə.dʒi/',
+            pos: '[n.] 名詞',
+            category: '科技發明',
+            zh: '科技；技術',
+            options: ['科技；技術', '傳說故事', '古董收藏', '魔法道具'],
+            exampleEn: 'Advanced technology makes future trains faster and safer.',
+            exampleZh: '先進的科技讓未來的火車更快速也更安全。',
+            clozeEn: 'Advanced ______ makes future trains faster and safer.',
+            clozeAnswer: 'technology'
+          },
+          {
+            word: 'environment',
+            phonetic: '/ɪnˈvaɪ.rən.mənt/',
+            pos: '[n.] 名詞',
+            category: '綠色永續',
+            zh: '環境；大自然',
+            options: ['環境；大自然', '工廠機器', '外太空', '深海溝'],
+            exampleEn: 'Taking high-speed trains is good for our environment because it produces less carbon.',
+            exampleZh: '搭乘高鐵對我們的環境很有益處，因為它產生的碳排放很少。',
+            clozeEn: 'Taking high-speed trains is good for our ______ because it produces less carbon.',
+            clozeAnswer: 'environment'
+          },
+          {
+            word: 'adventure',
+            phonetic: '/ədˈven.tʃər/',
+            pos: '[n.] 名詞',
+            category: '探索冒險',
+            zh: '冒險；探險',
+            options: ['冒險；探險', '休眠', '普通日常', '退票'],
+            exampleEn: 'Tim loves this great railway adventure around the world!',
+            exampleZh: 'Tim 非常喜愛這場環遊世界的鐵道大冒險！',
+            clozeEn: 'Tim loves this great railway ______ around the world!',
+            clozeAnswer: 'adventure'
+          }
+        ]
+      }
+    };
+
+    // ==========================================
+    // 3. 車庫列車圖鑑
+    // ==========================================
+    const GARAGE_TRAINS = [
+      {
+        id: '700t',
+        name: '台灣高鐵 700T',
+        speed: '300 km/h',
+        country: '🇹🇼 台灣',
+        desc: '日本新幹線 700 系為基礎量身打造的高速列車，流線型車頭大幅降低風阻。',
+        color: '#EA580C',
+        unlocked: true,
+        reqKm: 0,
+        reqCoins: 0
+      },
+      {
+        id: 'e5',
+        name: '新幹線 E5 隼號 (Hayabusa)',
+        speed: '320 km/h',
+        country: '🇯🇵 日本',
+        desc: '常磐綠與飛雲白車身，擁有 15 公尺長鼻造型，能克服進出隧道時的微氣壓波。',
+        color: '#059669',
+        unlocked: false,
+        reqKm: 150,
+        reqCoins: 100
+      },
+      {
+        id: 'eurostar',
+        name: '歐洲之星 Eurostar e320',
+        speed: '320 km/h',
+        country: '🇬🇧 英國 / 🇫🇷 法國',
+        desc: '奔馳在英吉利海峽海底隧道，串聯倫敦、巴黎與布魯塞爾的跨國傳奇高速列車。',
+        color: '#2563EB',
+        unlocked: false,
+        reqKm: 350,
+        reqCoins: 200
+      },
+      {
+        id: 'tgv',
+        name: '法國高鐵 TGV Duplex (雙層)',
+        speed: '320 km/h',
+        country: '🇫🇷 法國',
+        desc: '全世界載客量最高的雙層高速鐵路客車，視野居高臨下，法蘭西鐵道驕傲。',
+        color: '#4F46E5',
+        unlocked: false,
+        reqKm: 600,
+        reqCoins: 350
+      },
+      {
+        id: 'acela',
+        name: '美鐵阿謝拉特快 (Amtrak Acela)',
+        speed: '240 km/h',
+        country: '🇺🇸 美國',
+        desc: '美國東北走廊唯一的擺式高速列車，高速行經彎道時可傾斜抵消離心力。',
+        color: '#0284C7',
+        unlocked: false,
+        reqKm: 900,
+        reqCoins: 500
+      },
+      {
+        id: 'l0_maglev',
+        name: '日本 L0 系超導磁浮 (Maglev)',
+        speed: '603 km/h',
+        country: '⚡ 超導未來',
+        desc: '載入金氏世界紀錄的地面軌道最速傳奇！車體完全浮在空中，無任何輪軌摩擦。',
+        color: '#7C3AED',
+        unlocked: false,
+        reqKm: 1500,
+        reqCoins: 800
+      }
+    ];
+
+    // ==========================================
+    // 4. 遊戲狀態管理
+    // ==========================================
+    const STORAGE_KEY = 'tim_train_adventure_save_v1';
+
+    let gameState = {
+      mileage: 0,
+      coins: 150,
+      currentRouteKey: 'tw',
+      currentStationIndex: 0,
+      currentWordIndex: 0,
+      learnedWordKeys: [],
+      visitedStations: ['tw_TPE'],
+      unlockedTrains: ['700t'],
+      selectedTrainId: '700t',
+      gameMode: 'spelling'
+    };
+
+    function loadGame() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          gameState = { ...gameState, ...parsed };
+        }
+      } catch (e) {}
+    }
+
+    function saveGame() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 5. SVG 列車渲染
+    // ==========================================
+    function getTrainSvg(trainId) {
+      const train = GARAGE_TRAINS.find(t => t.id === trainId) || GARAGE_TRAINS[0];
+      const primaryColor = train.color;
+
+      return `
+        <svg viewBox="0 0 380 90" class="w-full h-auto drop-shadow-2xl">
+          <defs>
+            <linearGradient id="trainGrad_${trainId}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="60%" stop-color="${primaryColor}" />
+              <stop offset="100%" stop-color="#0F172A" />
+            </linearGradient>
+            <linearGradient id="windowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#38BDF8" />
+              <stop offset="100%" stop-color="#0369A1" />
+            </linearGradient>
+          </defs>
+
+          <!-- 車廂本體 -->
+          <path d="M 10 70 L 280 70 C 330 70, 360 62, 375 52 C 378 49, 370 42, 340 38 C 300 32, 260 30, 230 30 L 10 30 Z" fill="url(#trainGrad_${trainId})" stroke="#E2E8F0" stroke-width="2"/>
+          
+          <!-- 車頭駕駛艙玻璃 -->
+          <path d="M 280 34 C 310 36, 335 40, 345 46 L 315 48 C 290 48, 275 42, 270 38 Z" fill="url(#windowGrad)" stroke="#E2E8F0" stroke-width="1.5"/>
+          
+          <!-- 彩繪線條 -->
+          <path d="M 10 52 L 290 52 C 330 52, 355 50, 365 48" stroke="#FDE047" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M 10 58 L 270 58 C 300 58, 335 56, 350 54" stroke="#0284C7" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+          <!-- 客艙景觀車窗 -->
+          <rect x="30" y="38" width="36" height="18" rx="4" fill="url(#windowGrad)" stroke="#CBD5E1"/>
+          <rect x="75" y="38" width="36" height="18" rx="4" fill="url(#windowGrad)" stroke="#CBD5E1"/>
+          <rect x="120" y="38" width="36" height="18" rx="4" fill="url(#windowGrad)" stroke="#CBD5E1"/>
+          <rect x="165" y="38" width="36" height="18" rx="4" fill="url(#windowGrad)" stroke="#CBD5E1"/>
+          <rect x="210" y="38" width="36" height="18" rx="4" fill="url(#windowGrad)" stroke="#CBD5E1"/>
+
+          <!-- 車窗裡的小朋友剪影 -->
+          <text x="132" y="52" font-size="12">👦</text>
+          
+          <!-- 集電弓 -->
+          <path d="M 80 30 L 95 12 L 125 12 L 110 30" stroke="#94A3B8" stroke-width="3" fill="none"/>
+          <line x1="85" y1="12" x2="135" y2="12" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- 前探照燈 -->
+          <polygon points="360,54 375,52 368,58" fill="#FEF08A"/>
+          <circle cx="368" cy="54" r="3" fill="#FFFFFF"/>
+
+          <!-- 轉向架底盤與車輪組 -->
+          <rect x="15" y="68" width="260" height="8" fill="#1E293B"/>
+          <circle cx="45" cy="74" r="7" fill="#64748B" stroke="#0F172A" stroke-width="2"/>
+          <circle cx="70" cy="74" r="7" fill="#64748B" stroke="#0F172A" stroke-width="2"/>
+          <circle cx="180" cy="74" r="7" fill="#64748B" stroke="#0F172A" stroke-width="2"/>
+          <circle cx="205" cy="74" r="7" fill="#64748B" stroke="#0F172A" stroke-width="2"/>
+        </svg>
+      `;
+    }
+
+    // ==========================================
+    // 6. 核心渲染與遊戲機制
+    // ==========================================
+    let currentLettersScramble = [];
+    let currentSpellingSlots = [];
+
+    function getCurrentRoute() {
+      return RAIL_DATA[gameState.currentRouteKey] || RAIL_DATA.tw;
+    }
+
+    function getCurrentWord() {
+      const route = getCurrentRoute();
+      return route.words[gameState.currentWordIndex % route.words.length];
+    }
+
+    function updateTopBar() {
+      document.getElementById('mileage-val').textContent = gameState.mileage.toLocaleString();
+      document.getElementById('coins-val').textContent = gameState.coins.toLocaleString();
+      
+      const currentTrain = GARAGE_TRAINS.find(t => t.id === gameState.selectedTrainId) || GARAGE_TRAINS[0];
+      document.getElementById('current-train-name').textContent = currentTrain.name;
+      document.getElementById('train-speed').textContent = currentTrain.speed.replace(' km/h', '');
+      document.getElementById('train-display-svg').innerHTML = getTrainSvg(gameState.selectedTrainId);
+    }
+
+    function updateRouteTabs() {
+      document.querySelectorAll('.route-tab').forEach(tab => {
+        tab.className = 'route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700';
+      });
+      const activeTab = document.getElementById(`route-tab-${gameState.currentRouteKey}`);
+      if (activeTab) {
+        activeTab.className = 'route-tab px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30';
+      }
+    }
+
+    function renderStationsList() {
+      const route = getCurrentRoute();
+      const container = document.getElementById('stations-list-container');
+      container.innerHTML = '';
+
+      document.getElementById('route-level-name').textContent = route.name;
+      document.getElementById('sky-landmark').textContent = route.landmark;
+
+      const currSt = route.stations[gameState.currentStationIndex] || route.stations[0];
+      const nextSt = route.stations[(gameState.currentStationIndex + 1) % route.stations.length];
+
+      document.getElementById('station-curr').textContent = currSt.name;
+      document.getElementById('station-next').textContent = nextSt.name;
+
+      route.stations.forEach((st, idx) => {
+        const isPassed = idx < gameState.currentStationIndex;
+        const isCurrent = idx === gameState.currentStationIndex;
+
+        const node = document.createElement('div');
+        node.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+          isCurrent 
+            ? 'bg-amber-500/20 border-amber-400 text-white shadow-md' 
+            : isPassed 
+            ? 'bg-emerald-950/30 border-emerald-600/40 text-emerald-300' 
+            : 'bg-slate-900/40 border-slate-800 text-slate-400'
+        }`;
+
+        node.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+              isCurrent ? 'bg-amber-500 text-slate-950 animate-pulse-fast' : isPassed ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-500'
+            }">
+              ${isPassed ? '✓' : idx + 1}
+            </div>
+            <div>
+              <div class="text-xs font-black ${isCurrent ? 'text-amber-300' : 'text-slate-200'}">${st.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${st.km} km</div>
+            </div>
+          </div>
+          ${isCurrent ? '<span class="text-xs animate-bounce">🚅 目前停靠</span>' : ''}
+        `;
+        container.appendChild(node);
+      });
+    }
+
+    function renderWordChallenge() {
+      const wordObj = getCurrentWord();
+      document.getElementById('word-category-badge').textContent = `🚉 ${wordObj.category}`;
+      document.getElementById('word-part-of-speech').textContent = wordObj.pos;
+      document.getElementById('word-definition').textContent = wordObj.zh;
+      document.getElementById('word-phonetic-hint').textContent = wordObj.phonetic;
+      document.getElementById('word-example-en').innerHTML = wordObj.exampleEn.replace(
+        new RegExp(wordObj.word, 'gi'),
+        match => `<span class="text-amber-400 font-bold underline decoration-amber-400/50">${match}</span>`
+      );
+      document.getElementById('word-example-zh').textContent = wordObj.exampleZh;
+
+      const dynamicArea = document.getElementById('dynamic-mode-content');
+      dynamicArea.innerHTML = '';
+      document.getElementById('feedback-message').innerHTML = '<span>🚄</span> 拼好英文單字，火車即可鳴笛進站！';
+      document.getElementById('feedback-message').className = 'text-xs sm:text-sm font-bold flex items-center gap-1.5 text-slate-400';
+
+      if (gameState.gameMode === 'spelling') {
+        renderSpellingMode(wordObj, dynamicArea);
+      } else if (gameState.gameMode === 'quiz') {
+        renderQuizMode(wordObj, dynamicArea);
+      } else if (gameState.gameMode === 'cloze') {
+        renderClozeMode(wordObj, dynamicArea);
+      }
+    }
+
+    function renderSpellingMode(wordObj, container) {
+      const word = wordObj.word.toUpperCase();
+      const letters = word.split('');
+      
+      let scrambled = [...letters];
+      for (let i = scrambled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]];
+      }
+      currentLettersScramble = scrambled.map((char, index) => ({ id: `${char}_${index}`, char, used: false }));
+      currentSpellingSlots = [];
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col items-center gap-4 w-full';
+
+      const slotsContainer = document.createElement('div');
+      slotsContainer.id = 'spelling-slots-box';
+      slotsContainer.className = 'flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap min-h-[56px] w-full p-2 bg-slate-900/80 rounded-2xl border-2 border-dashed border-slate-700';
+
+      letters.forEach((_, idx) => {
+        const slot = document.createElement('div');
+        slot.className = 'w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-slate-800 border-2 border-slate-600 flex items-center justify-center font-mono font-black text-xl sm:text-2xl text-amber-400 cursor-pointer shadow-inner hover:border-amber-400 transition-all';
+        slot.dataset.index = idx;
+        slot.onclick = () => removeSlotLetter(idx);
+        slotsContainer.appendChild(slot);
+      });
+
+      const lettersContainer = document.createElement('div');
+      lettersContainer.id = 'scramble-letters-box';
+      lettersContainer.className = 'flex items-center justify-center gap-2 flex-wrap';
+
+      currentLettersScramble.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.id = `scramble-btn-${item.id}`;
+        btn.className = 'w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white font-mono font-black text-xl sm:text-2xl border-2 border-slate-500 shadow-md shadow-slate-900/40 active:scale-90 transition-all flex items-center justify-center';
+        btn.textContent = item.char;
+        btn.onclick = () => pickLetter(item.id);
+        lettersContainer.appendChild(btn);
+      });
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'text-xs text-slate-400 hover:text-white underline mt-1';
+      resetBtn.textContent = '↺ 清空重拼 (Reset)';
+      resetBtn.onclick = () => resetSpelling();
+
+      wrapper.appendChild(slotsContainer);
+      wrapper.appendChild(lettersContainer);
+      wrapper.appendChild(resetBtn);
+      container.appendChild(wrapper);
+    }
+
+    function pickLetter(id) {
+      const item = currentLettersScramble.find(l => l.id === id);
+      if (!item || item.used) return;
+
+      const wordObj = getCurrentWord();
+      if (currentSpellingSlots.length >= wordObj.word.length) return;
+
+      item.used = true;
+      currentSpellingSlots.push(item);
+
+      const btn = document.getElementById(`scramble-btn-${id}`);
+      if (btn) {
+        btn.classList.add('opacity-20', 'pointer-events-none');
+      }
+
+      updateSpellingSlotsView();
+
+      if (currentSpellingSlots.length === wordObj.word.length) {
+        verifyAnswer();
+      }
+    }
+
+    function removeSlotLetter(index) {
+      if (index >= currentSpellingSlots.length) return;
+      const removed = currentSpellingSlots.splice(index, 1)[0];
+      if (removed) {
+        removed.used = false;
+        const btn = document.getElementById(`scramble-btn-${removed.id}`);
+        if (btn) {
+          btn.classList.remove('opacity-20', 'pointer-events-none');
+        }
+      }
+      updateSpellingSlotsView();
+    }
+
+    function resetSpelling() {
+      currentLettersScramble.forEach(item => {
+        item.used = false;
+        const btn = document.getElementById(`scramble-btn-${item.id}`);
+        if (btn) btn.classList.remove('opacity-20', 'pointer-events-none');
+      });
+      currentSpellingSlots = [];
+      updateSpellingSlotsView();
+    }
+
+    function updateSpellingSlotsView() {
+      const slotsBox = document.getElementById('spelling-slots-box');
+      if (!slotsBox) return;
+      const slots = slotsBox.children;
+      for (let i = 0; i < slots.length; i++) {
+        const item = currentSpellingSlots[i];
+        if (item) {
+          slots[i].textContent = item.char;
+          slots[i].className = 'w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center font-mono font-black text-xl sm:text-2xl text-amber-300 cursor-pointer shadow-inner animate-pulse-fast';
+        } else {
+          slots[i].textContent = '';
+          slots[i].className = 'w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-slate-800 border-2 border-slate-600 flex items-center justify-center font-mono font-black text-xl sm:text-2xl text-amber-400 cursor-pointer shadow-inner hover:border-amber-400 transition-all';
+        }
+      }
+    }
+
+    function renderQuizMode(wordObj, container) {
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3 w-full';
+
+      wordObj.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-700 border-2 border-slate-700 text-left text-sm font-bold text-slate-200 transition-all active:scale-95 flex items-center gap-2.5';
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-mono text-xs text-amber-400">${String.fromCharCode(65 + idx)}</span>
+          <span>${opt}</span>
+        `;
+        btn.onclick = () => {
+          if (opt === wordObj.zh) {
+            handleCorrectAnswer();
+          } else {
+            handleWrongAnswer(btn);
+          }
+        };
+        grid.appendChild(btn);
+      });
+
+      container.appendChild(grid);
+    }
+
+    function renderClozeMode(wordObj, container) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col items-center gap-4 w-full';
+
+      const sentenceBox = document.createElement('div');
+      sentenceBox.className = 'text-base sm:text-lg font-medium text-slate-100 bg-slate-900/80 p-4 rounded-xl border border-slate-700 w-full';
+      sentenceBox.innerHTML = wordObj.clozeEn.replace('______', '<span class="px-3 py-1 bg-amber-500/20 border-b-2 border-amber-400 text-amber-300 font-mono font-bold tracking-wider">? ? ?</span>');
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'cloze-input-box';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.placeholder = '請鍵盤輸入英文單字...';
+      input.className = 'w-full max-w-sm px-4 py-3 rounded-xl bg-slate-900 border-2 border-slate-600 focus:border-amber-400 text-center text-lg font-mono font-black text-amber-300 outline-none transition-all';
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') verifyAnswer();
+      };
+
+      wrapper.appendChild(sentenceBox);
+      wrapper.appendChild(input);
+      container.appendChild(wrapper);
+
+      setTimeout(() => input.focus(), 100);
+    }
+
+    // ==========================================
+    // 7. 驗證與晉級
+    // ==========================================
+    function verifyAnswer() {
+      const wordObj = getCurrentWord();
+
+      if (gameState.gameMode === 'spelling') {
+        const userTyped = currentSpellingSlots.map(s => s.char).join('');
+        if (userTyped.toLowerCase() === wordObj.word.toLowerCase()) {
+          handleCorrectAnswer();
+        } else {
+          handleWrongAnswer();
+        }
+      } else if (gameState.gameMode === 'cloze') {
+        const input = document.getElementById('cloze-input-box');
+        if (input && input.value.trim().toLowerCase() === wordObj.clozeAnswer.toLowerCase()) {
+          handleCorrectAnswer();
+        } else {
+          handleWrongAnswer();
+        }
+      }
+    }
+
+    function handleCorrectAnswer() {
+      playSuccessSound();
+      playHornSound();
+
+      gameState.mileage += 35;
+      gameState.coins += 20;
+
+      const wordObj = getCurrentWord();
+      if (!gameState.learnedWordKeys.includes(wordObj.word)) {
+        gameState.learnedWordKeys.push(wordObj.word);
+      }
+
+      const route = getCurrentRoute();
+      gameState.currentStationIndex = (gameState.currentStationIndex + 1) % route.stations.length;
+      const stCode = `${route.id}_${route.stations[gameState.currentStationIndex].code}`;
+      if (!gameState.visitedStations.includes(stCode)) {
+        gameState.visitedStations.push(stCode);
+      }
+
+      const fb = document.getElementById('feedback-message');
+      fb.className = 'text-xs sm:text-sm font-black flex items-center gap-1.5 text-emerald-400';
+      fb.innerHTML = `<span>🎉</span> 太棒了 Tim！列車前進到了【${route.stations[gameState.currentStationIndex].name}】！ (+35km, +20🪙)`;
+
+      saveGame();
+      updateTopBar();
+      renderStationsList();
+
+      const trainBox = document.getElementById('train-avatar-container');
+      trainBox.classList.add('scale-110');
+      setTimeout(() => trainBox.classList.remove('scale-110'), 600);
+
+      setTimeout(() => {
+        gameState.currentWordIndex++;
+        saveGame();
+        renderWordChallenge();
+      }, 1400);
+    }
+
+    function handleWrongAnswer(targetElem) {
+      playFailSound();
+      const fb = document.getElementById('feedback-message');
+      fb.className = 'text-xs sm:text-sm font-black flex items-center gap-1.5 text-rose-400';
+      fb.innerHTML = '<span>⚠️</span> 號誌紅燈！請再檢查拼字或先聽聽發音喔！';
+
+      if (targetElem) {
+        targetElem.classList.add('border-rose-500', 'bg-rose-950/40');
+        setTimeout(() => {
+          targetElem.classList.remove('border-rose-500', 'bg-rose-950/40');
+        }, 800);
+      }
+    }
+
+    function skipWord() {
+      gameState.currentWordIndex++;
+      saveGame();
+      renderWordChallenge();
+    }
+
+    function setGameMode(mode) {
+      gameState.gameMode = mode;
+      document.querySelectorAll('.game-mode-btn').forEach(btn => {
+        btn.className = 'game-mode-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+      });
+      const currentBtn = document.getElementById(`mode-btn-${mode}`);
+      if (currentBtn) {
+        currentBtn.className = 'game-mode-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm';
+      }
+      renderWordChallenge();
+    }
+
+    function switchRoute(routeKey) {
+      if (!RAIL_DATA[routeKey]) return;
+      gameState.currentRouteKey = routeKey;
+      gameState.currentStationIndex = 0;
+      gameState.currentWordIndex = 0;
+      saveGame();
+      updateRouteTabs();
+      renderStationsList();
+      renderWordChallenge();
+    }
+
+    // ==========================================
+    // 8. 語音朗讀
+    // ==========================================
+    function speakCurrentWord(lang = 'en-US') {
+      const wordObj = getCurrentWord();
+      if (!('speechSynthesis' in window)) {
+        alert('您的瀏覽器不支援語音合成');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(wordObj.word);
+      utter.lang = lang;
+      utter.rate = 0.85;
+      utter.pitch = 1.0;
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ==========================================
+    // 9. 車庫與護照
+    // ==========================================
+    function openGarageModal() {
+      const modal = document.getElementById('garage-modal');
+      const container = document.getElementById('garage-trains-list');
+      container.innerHTML = '';
+
+      GARAGE_TRAINS.forEach(train => {
+        const isUnlocked = gameState.unlockedTrains.includes(train.id);
+        const isCurrent = gameState.selectedTrainId === train.id;
+        const canUnlock = !isUnlocked && gameState.mileage >= train.reqKm && gameState.coins >= train.reqCoins;
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border-2 flex flex-col justify-between transition-all ${
+          isCurrent 
+            ? 'bg-amber-500/20 border-amber-400 shadow-lg' 
+            : isUnlocked 
+            ? 'bg-slate-800/90 border-slate-700' 
+            : 'bg-slate-900/50 border-slate-800 opacity-60'
+        }`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-slate-400">${train.country}</span>
+              <span class="text-xs font-mono font-black text-cyan-400">${train.speed}</span>
+            </div>
+            <h4 class="text-base font-black text-white mb-1">${train.name}</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">${train.desc}</p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+            ${
+              isCurrent 
+                ? '<span class="text-xs font-black text-amber-400 flex items-center gap-1">✔ 正在駕駛中</span>' 
+                : isUnlocked 
+                ? `<button onclick="selectTrain('${train.id}')" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl">切換駕駛</button>` 
+                : canUnlock 
+                ? `<button onclick="unlockTrain('${train.id}', ${train.reqCoins})" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl">解鎖列車 (${train.reqCoins}🪙)</button>`
+                : `<div class="text-[11px] text-slate-500">🔒 需 ${train.reqKm}km & ${train.reqCoins}🪙</div>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeGarageModal() {
+      document.getElementById('garage-modal').classList.add('hidden');
+    }
+
+    function selectTrain(trainId) {
+      gameState.selectedTrainId = trainId;
+      saveGame();
+      updateTopBar();
+      openGarageModal();
+    }
+
+    function unlockTrain(trainId, cost) {
+      if (gameState.coins >= cost) {
+        gameState.coins -= cost;
+        gameState.unlockedTrains.push(trainId);
+        gameState.selectedTrainId = trainId;
+        saveGame();
+        updateTopBar();
+        openGarageModal();
+        playSuccessSound();
+      }
+    }
+
+    function openPassportModal() {
+      const modal = document.getElementById('passport-modal');
+      document.getElementById('passport-stations-count').textContent = gameState.visitedStations.length;
+      document.getElementById('passport-words-count').textContent = gameState.learnedWordKeys.length;
+
+      const stampsGrid = document.getElementById('passport-stamps-grid');
+      stampsGrid.innerHTML = '';
+
+      Object.keys(RAIL_DATA).forEach(rk => {
+        const route = RAIL_DATA[rk];
+        const hasVisited = route.stations.some(st => gameState.visitedStations.includes(`${route.id}_${st.code}`));
+
+        const stamp = document.createElement('div');
+        stamp.className = `p-3 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center transition-all ${
+          hasVisited 
+            ? 'bg-amber-500/10 border-amber-400 text-amber-200' 
+            : 'bg-slate-900 border-slate-800 text-slate-600'
+        }`;
+
+        stamp.innerHTML = `
+          <div class="text-3xl mb-1">${hasVisited ? route.landmark : '🔒'}</div>
+          <div class="text-xs font-black">${route.name.split(' ')[0]}</div>
+          <div class="text-[10px] ${hasVisited ? 'text-emerald-400' : 'text-slate-600'}">${hasVisited ? 'PASSED 簽證通過' : '未開通'}</div>
+        `;
+        stampsGrid.appendChild(stamp);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    function closePassportModal() {
+      document.getElementById('passport-modal').classList.add('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadGame();
+      updateTopBar();
+      updateRouteTabs();
+      renderStationsList();
+      renderWordChallenge();
+    });
+  </script>
+</body>
+</html>

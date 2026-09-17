@@ -1,0 +1,9 @@
+{
+  "name": "kids-word-spelling",
+  "version": "1.0.0",
+  "description": "Interactive English spelling game for kids (Tim & Bella)",
+  "scripts": {
+    "dev": "npx serve -l 3000 ."
+  },
+  "keywords": ["education", "kids", "spelling", "phonics"]
+}
