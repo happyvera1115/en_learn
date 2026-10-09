@@ -2529,14 +2529,18 @@
     class SpellingApp {
       constructor() {
         this.allWords = [...initialWords];
-        this.currentCategory = 'grade3_ready';
+        this.currentCategory = 'grade3_u1';
         this.isRandomOrder = true; // 預設啟用亂數隨機出題
         this.currentUser = 'Tim';
         this.profiles = this.loadProfiles();
+        this.isReviewMode = false;
+        this.isUnitAdvancing = false;
+        this.nextAdvancingCatId = null;
+        this.mistakeWordIds = new Set();
+        this.passedWordIds = new Set();
         this.words = this.getWordsByCategory(this.currentCategory);
         this.currentIndex = 0;
-        
-        this.slots = [];
+this.slots = [];
         this.letterPool = [];
         this.isSolved = false;
         this.speechSequenceToken = 0;
@@ -2602,39 +2606,28 @@
       getWordsByCategory(catId) {
         let pool = (this.allWords || []).filter(w => w.category === catId);
         if (pool.length === 0) pool = [...(this.allWords || [])];
+        return this.isRandomOrder ? this.shuffleArray(pool) : [...pool];
+      }
 
-        const profiles = this.profiles || this.loadProfiles();
-        const user = this.currentUser || 'Tim';
-        const profile = (profiles && profiles[user]) ? profiles[user] : { completed: {} };
-        const completedMap = profile.completed || {};
-        const practiced = pool.filter(w => !!completedMap[w.id]);
-        const unpracticed = pool.filter(w => !completedMap[w.id]);
-
-        // 每次出題以 15 個單字為原則（以練習過的 10 個為主，搭配 5 個新的還沒練習過的）
-        let targetPracticed = Math.min(10, practiced.length);
-        let targetNew = Math.min(5, unpracticed.length);
-
-        // 如果練習過的不足 10 個，由未練習過的補足
-        if (targetPracticed < 10) {
-          const shortage = 10 - targetPracticed;
-          targetNew = Math.min(targetNew + shortage, unpracticed.length);
-        }
-
-        // 如果未練習過的不足 5 個，由已練習過的補足
-        if (targetNew < 5) {
-          const shortage = 5 - targetNew;
-          targetPracticed = Math.min(targetPracticed + shortage, practiced.length);
-        }
-
-        const shuffledPracticed = this.shuffleArray(practiced).slice(0, targetPracticed);
-        const shuffledUnpracticed = this.shuffleArray(unpracticed).slice(0, targetNew);
-
-        const combined = [...shuffledPracticed, ...shuffledUnpracticed];
-        return this.shuffleArray(combined);
+      switchCategory(catId) {
+        sfx.playPop();
+        this.currentCategory = catId;
+        this.isReviewMode = false;
+        this.isUnitAdvancing = false;
+        this.nextAdvancingCatId = null;
+        this.mistakeWordIds = new Set();
+        this.passedWordIds = new Set();
+        this.words = this.getWordsByCategory(this.currentCategory);
+        this.renderCategoryTabs();
+        this.currentIndex = 0;
+        this.loadWord(0);
       }
 
       shuffleCurrentQuestions() {
         sfx.playPop();
+        this.isReviewMode = false;
+        this.mistakeWordIds = new Set();
+        this.passedWordIds = new Set();
         this.words = this.getWordsByCategory(this.currentCategory);
         this.currentIndex = 0;
         this.loadWord(0);
@@ -2726,11 +2719,7 @@
           btn.innerHTML = `<span>${cat.icon}</span><span>${cat.name}</span><span class="text-[11px] sm:text-xs opacity-75 font-medium">(${masteredCount}/${totalCount})</span>`;
           btn.addEventListener('click', () => {
             sfx.playPop();
-            this.currentCategory = cat.id;
-            this.words = this.getWordsByCategory(this.currentCategory);
-            this.renderCategoryTabs();
-            this.currentIndex = 0;
-            this.loadWord(0);
+            this.switchCategory(cat.id);
           });
           this.dom.categoryTabs.appendChild(btn);
         });
@@ -2777,21 +2766,17 @@
           window.speechSynthesis?.cancel();
           this.speechSequenceToken++;
           this.dom.feedbackCard.classList.add('hidden');
+
+          if (this.isUnitAdvancing && this.nextAdvancingCatId) {
+            this.isUnitAdvancing = false;
+            const targetCat = this.nextAdvancingCatId;
+            this.nextAdvancingCatId = null;
+            this.switchCategory(targetCat);
+            return;
+          }
+
           if (this.isSolved) {
-            if (this.currentCategory === 'unlearned') {
-              this.words = this.getWordsByCategory('unlearned');
-              this.renderCategoryTabs();
-              if (this.words.length === 0) {
-                this.loadWord(0);
-                return;
-              }
-              if (this.currentIndex >= this.words.length) {
-                this.currentIndex = 0;
-              }
-              this.loadWord(this.currentIndex);
-            } else {
-              this.nextWord();
-            }
+            this.nextWord();
           }
         });
       }
@@ -2869,7 +2854,11 @@
         this.dom.wordTranslation.textContent = wordData.translation;
         this.dom.wordPhonics.textContent = wordData.phonics || '';
         this.dom.wordHint.textContent = wordData.hint || '';
-        this.dom.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+        if (this.isReviewMode) {
+          this.dom.wordCounter.textContent = `📝 訂正 ${this.currentIndex + 1} / ${this.words.length}`;
+        } else {
+          this.dom.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+        }
         this.dom.feedbackCard.classList.add('hidden');
 
         const isCompleted = !!this.profiles[this.currentUser].completed[wordData.id];
@@ -3202,11 +3191,23 @@
 
       handleSuccess() {
         this.isSolved = true;
-        sfx.playSuccess();
+        sfx.playCorrect();
         launchConfetti();
 
-        const profile = this.profiles[this.currentUser];
         const word = this.getCurrentWord();
+        const attempts = this.attemptsCount;
+        const elapsedSec = Math.max(1, Math.round((Date.now() - this.wordStartTime) / 1000));
+
+        // 依據是否一次正確判定過關或錯題
+        if (attempts === 1) {
+          this.passedWordIds.add(word.id);
+          this.mistakeWordIds.delete(word.id);
+        } else {
+          this.mistakeWordIds.add(word.id);
+          this.passedWordIds.delete(word.id);
+        }
+
+        const profile = this.profiles[this.currentUser];
         const isFirstTime = !profile.completed[word.id];
 
         if (isFirstTime) {
@@ -3231,10 +3232,28 @@
         const praiseEn = praiseTemplate.en.replace('{name}', this.currentUser);
         const praiseZh = praiseTemplate.zh.replace('{name}', this.currentUser);
 
-        this.dom.feedbackEmoji.textContent = '🌟 🎉 🏆';
-        this.dom.feedbackTitle.textContent = praiseZh;
-        this.dom.feedbackSubtitle.textContent = praiseEn;
-        this.dom.feedbackActionBtn.textContent = '挑戰下一個單字 ➡️';
+        this.dom.feedbackEmoji.textContent = this.isReviewMode ? '🌟 👏 📝' : '🌟 🎉 🏆';
+        this.dom.feedbackTitle.textContent = this.isReviewMode ? `錯題訂正成功！${praiseZh}` : `${praiseZh}！`;
+        this.dom.feedbackSubtitle.textContent = `${praiseEn} You finished in ${elapsedSec}s with ${attempts} ${attempts === 1 ? 'try' : 'tries'}!`;
+        
+        if (this.isReviewMode) {
+          const isLastReview = this.currentIndex + 1 >= this.words.length;
+          this.dom.feedbackActionBtn.textContent = isLastReview ? '完成訂正檢查 ➡️' : '下一題訂正 ➡️';
+        } else {
+          const isLastWord = this.currentIndex + 1 >= this.words.length;
+          this.dom.feedbackActionBtn.textContent = isLastWord ? '查看本單元成果 ➡️' : '挑戰下一個單字 ➡️';
+        }
+
+        // 呈現本次作答戰績 (花費時間與嘗試次數)
+        if (this.dom.feedbackStatsRow) {
+          this.dom.feedbackStatsRow.classList.remove('hidden');
+        }
+        if (this.dom.feedbackTimeText) {
+          this.dom.feedbackTimeText.textContent = elapsedSec;
+        }
+        if (this.dom.feedbackAttemptsText) {
+          this.dom.feedbackAttemptsText.textContent = attempts;
+        }
 
         // 渲染單字強化複習區 (包含縮圖、正確拼字方塊、中文)
         if (this.dom.feedbackWordBox) {
@@ -3265,14 +3284,13 @@
 
         this.dom.feedbackCard.classList.remove('hidden');
 
-        // 自動循序語音引導：
-        // 1. 英文讚美 ("Awesome job, Tim!")
-        // 2. 拼字發音 ("c - a - p, cap!")
-        // 3. 中文發音 ("鴨舌帽")
+        // 自動循序語音引導
         const currentToken = ++this.speechSequenceToken;
+        const spokenPraiseEn = `${praiseEn}! You finished in ${elapsedSec} seconds!`;
+        const spokenStatsZh = `花了 ${elapsedSec} 秒，嘗試 ${attempts} 次成功！${word.translation}`;
         setTimeout(() => {
           if (this.speechSequenceToken !== currentToken) return;
-          this.speak(praiseEn, 0.95, () => {
+          this.speak(spokenPraiseEn, 0.95, () => {
             if (this.speechSequenceToken !== currentToken) return;
             setTimeout(() => {
               if (this.speechSequenceToken !== currentToken) return;
@@ -3280,7 +3298,7 @@
                 if (this.speechSequenceToken !== currentToken) return;
                 setTimeout(() => {
                   if (this.speechSequenceToken !== currentToken) return;
-                  this.speakZh(word.translation);
+                  this.speakZh(spokenStatsZh);
                 }, 350);
               });
             }, 350);
@@ -3289,7 +3307,14 @@
       }
 
       handleFailure() {
+        this.attemptsCount++;
         sfx.playTryAgain();
+
+        const word = this.getCurrentWord();
+        if (word) {
+          this.mistakeWordIds.add(word.id);
+          this.passedWordIds.delete(word.id);
+        }
 
         this.dom.slotsContainer.classList.add('animate-shake');
         setTimeout(() => {
@@ -3297,7 +3322,6 @@
         }, 600);
 
         const profile = this.profiles[this.currentUser];
-        const word = this.getCurrentWord();
         profile.history.push({
           word: word.word,
           success: false,
@@ -3305,9 +3329,12 @@
         });
         this.saveProfiles();
 
-        // 答錯時隱藏複習面板，專心打氣重試
+        // 答錯時隱藏複習面板與戰報面板，專心打氣重試
         if (this.dom.feedbackWordBox) {
           this.dom.feedbackWordBox.classList.add('hidden');
+        }
+        if (this.dom.feedbackStatsRow) {
+          this.dom.feedbackStatsRow.classList.add('hidden');
         }
 
         const enc = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
@@ -3322,57 +3349,6 @@
         }, 300);
       }
 
-      speak(text, rate = 0.9, onEnd = null) {
-        if (!('speechSynthesis' in window)) {
-          if (onEnd) onEnd();
-          return;
-        }
-        try {
-          window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = rate;
-          utter.pitch = 1.05;
-          utter.lang = 'en-US';
-
-          const voices = window.speechSynthesis.getVoices();
-          const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google')));
-          if (naturalVoice) utter.voice = naturalVoice;
-
-          if (onEnd) utter.onend = onEnd;
-          window.speechSynthesis.speak(utter);
-        } catch (e) {
-          if (onEnd) onEnd();
-        }
-      }
-
-      speakZh(text, onEnd = null) {
-        if (!('speechSynthesis' in window)) {
-          if (onEnd) onEnd();
-          return;
-        }
-        try {
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.rate = 0.85;
-          utter.pitch = 1.05;
-          utter.lang = 'zh-TW';
-
-          const voices = window.speechSynthesis.getVoices();
-          const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn') || v.name.includes('Taiwan') || v.name.includes('Mei-Jia') || v.name.includes('Han'));
-          if (zhVoice) utter.voice = zhVoice;
-
-          if (onEnd) utter.onend = onEnd;
-          window.speechSynthesis.speak(utter);
-        } catch (e) {
-          if (onEnd) onEnd();
-        }
-      }
-
-      speakSpelling(word, onEnd = null) {
-        // 拼字發音：將每個字母分開清晰朗讀，最後念出完整單字
-        const lettersSpelled = word.toUpperCase().split('').map(ch => ch === '-' ? 'hyphen' : ch).join(' , ');
-        this.speak(`${lettersSpelled} . ${word}`, 0.75, onEnd);
-      }
-
       prevWord() {
         sfx.playPop();
         this.loadWord(this.currentIndex - 1);
@@ -3380,13 +3356,87 @@
 
       nextWord() {
         sfx.playPop();
+
+        // 若尚未解開就按下一題，視為錯題
+        if (!this.isSolved) {
+          const currentWord = this.getCurrentWord();
+          if (currentWord) {
+            this.mistakeWordIds.add(currentWord.id);
+            this.passedWordIds.delete(currentWord.id);
+          }
+        }
+
         let nextIdx = this.currentIndex + 1;
         if (nextIdx >= this.words.length) {
-          // 當一輪 15 題挑戰結束時，自動依據最新熟練度重新抽籤（10 熟 + 5 新）
-          this.words = this.getWordsByCategory(this.currentCategory);
-          nextIdx = 0;
+          // 本輪結束，進入結算與錯題檢查
+          this.handleRoundEnd();
+          return;
         }
         this.loadWord(nextIdx);
+      }
+
+      handleRoundEnd() {
+        const unitWords = this.allWords.filter(w => w.category === this.currentCategory);
+        // 尚未掌握/有答錯的單字
+        const remainingMistakes = unitWords.filter(w => this.mistakeWordIds.has(w.id) || !this.passedWordIds.has(w.id));
+
+        if (remainingMistakes.length > 0) {
+          // 停在同一單元，改錯題！
+          this.isReviewMode = true;
+          this.words = this.isRandomOrder ? this.shuffleArray(remainingMistakes) : [...remainingMistakes];
+          this.currentIndex = 0;
+
+          sfx.playTryAgain();
+          const catName = categories.find(c => c.id === this.currentCategory)?.name || '本單元';
+          const alertMsg = `📝 <b>錯題訂正時間！</b>本單元還有 <b>${remainingMistakes.length}</b> 個單字沒答對，請在同單元訂正改錯，全部對了才能前往下一單元喔！`;
+          this.showHintAlert(alertMsg, '📝');
+          
+          this.speakZh(`本單元還有 ${remainingMistakes.length} 題錯題，我們來改錯題，全部答對才能前往下一單元喔！加油！`, () => {
+            this.loadWord(0);
+          });
+        } else {
+          // 本單元所有單字全部答對！
+          this.handleUnitCompleted();
+        }
+      }
+
+      handleUnitCompleted() {
+        launchConfetti();
+        sfx.playLevelUp?.() || sfx.playPop();
+
+        const currentCatIdx = categories.findIndex(c => c.id === this.currentCategory);
+        const currentCat = categories[currentCatIdx];
+        const nextCat = categories[currentCatIdx + 1];
+
+        if (nextCat) {
+          this.isUnitAdvancing = true;
+          this.nextAdvancingCatId = nextCat.id;
+
+          this.dom.feedbackEmoji.textContent = '🏆 🌟 🚀';
+          this.dom.feedbackTitle.textContent = `太神了，${this.currentUser}！`;
+          this.dom.feedbackSubtitle.textContent = `【${currentCat.name}】全部單字全數答對通關！準備進入下一單元！`;
+          this.dom.feedbackActionBtn.textContent = `前往下一單元【${nextCat.name}】 ➡️`;
+
+          if (this.dom.feedbackWordBox) this.dom.feedbackWordBox.classList.add('hidden');
+          if (this.dom.feedbackStatsRow) this.dom.feedbackStatsRow.classList.add('hidden');
+          this.dom.feedbackCard.classList.remove('hidden');
+
+          this.speak(`Congratulations, ${this.currentUser}! Unit cleared!`, 0.9, () => {
+            this.speakZh(`太棒了！${currentCat.name} 所有單字全部答對！準備進入 ${nextCat.name}！`);
+          });
+        } else {
+          this.isUnitAdvancing = false;
+          this.dom.feedbackEmoji.textContent = '👑 🏆 🌟';
+          this.dom.feedbackTitle.textContent = `全破大英雄，${this.currentUser}！`;
+          this.dom.feedbackSubtitle.textContent = `恭喜你挑戰完成所有單元！你是英語拼字大贏家！`;
+          this.dom.feedbackActionBtn.textContent = `重新挑戰全部單元 🔄`;
+
+          if (this.dom.feedbackWordBox) this.dom.feedbackWordBox.classList.add('hidden');
+          if (this.dom.feedbackStatsRow) this.dom.feedbackStatsRow.classList.add('hidden');
+          this.dom.feedbackCard.classList.remove('hidden');
+
+          this.speak(`Incredible! You completed all units! You are a champion!`, 0.9);
+        }
       }
 
       showStats() {
