@@ -3024,75 +3024,159 @@
         this.slots = new Array(this.getCurrentWord().word.length).fill(null);
         this.renderBoard();
       }
+      getPhonicsGuide(word, index) {
+        const lowerWord = word.toLowerCase();
+        const ch = lowerWord[index];
+        const nextCh = lowerWord[index + 1] || '';
+        const prevCh = lowerWord[index - 1] || '';
 
-      showHintAlert(text) {
+        // 特殊雙字母組合音 (Digraphs & Blends)
+        if (ch === 't' && nextCh === 'h') {
+          return { ipa: '/θ/', sound: '咬舌音「th」(/θ/)', word: 'thirty', prompt: 'th, /θ/, thirty', zhVoice: '這格和後面是咬舌音 th，聽聽看 /θ/' };
+        }
+        if (prevCh === 't' && ch === 'h') {
+          return { ipa: '/θ/', sound: '咬舌音「th」的 h', word: 'thirty', prompt: 'h, th, /θ/', zhVoice: '這格是跟前面的 t 組成咬舌音 th 的 h 喔' };
+        }
+        if (ch === 'c' && nextCh === 'h') {
+          return { ipa: '/tʃ/', sound: '「ch」(/tʃ/)', word: 'chair', prompt: 'ch, /tʃ/, chair', zhVoice: '這格和後面是組合音 ch，像 chair 一樣的音' };
+        }
+        if (prevCh === 'c' && ch === 'h') {
+          return { ipa: '/tʃ/', sound: '「ch」的 h', word: 'chair', prompt: 'h, ch, /tʃ/', zhVoice: '這格是跟前面的 c 組成 ch 的 h 喔' };
+        }
+        if (ch === 's' && nextCh === 'h') {
+          return { ipa: '/ʃ/', sound: '「sh」(/ʃ/)', word: 'fish', prompt: 'sh, /ʃ/, fish', zhVoice: '這格和後面是組合音 sh，像 fish 一樣的音' };
+        }
+        if (prevCh === 's' && ch === 'h') {
+          return { ipa: '/ʃ/', sound: '「sh」的 h', word: 'fish', prompt: 'h, sh, /ʃ/', zhVoice: '這格是跟前面的 s 組成 sh 的 h 喔' };
+        }
+        if (ch === 'o' && nextCh === 'o') {
+          return { ipa: '/ʊ/', sound: '短母音「oo」(/ʊ/)', word: 'book', prompt: 'oo, /ʊ/, book', zhVoice: '這格是雙母音 oo，像 book 的發音' };
+        }
+        if (prevCh === 'o' && ch === 'o') {
+          return { ipa: '/ʊ/', sound: '短母音「oo」的第二個 o', word: 'book', prompt: 'o, oo, /ʊ/', zhVoice: '這格是 book 裡面雙母音 oo 的第二個 o 喔' };
+        }
+        if (ch === 'e' && nextCh === 'r') {
+          return { ipa: '/ɚ/', sound: '捲舌「er」(/ɚ/)', word: 'eraser', prompt: 'er, /ɚ/, eraser', zhVoice: '這格和後面是捲舌音 er，像 eraser' };
+        }
+        if (ch === 'i' && nextCh === 'r') {
+          return { ipa: '/ɜːr/', sound: '捲舌「ir」(/ɜːr/)', word: 'girl', prompt: 'ir, /ɜːr/, girl', zhVoice: '這格和後面是捲舌音 ir，像 girl' };
+        }
+        if (ch === 'a' && nextCh === 'r') {
+          return { ipa: '/ɑːr/', sound: '開口捲舌「ar」(/ɑːr/)', word: 'marker', prompt: 'ar, /ɑːr/, marker', zhVoice: '這格和後面是開口捲舌音 ar，像 marker' };
+        }
+
+        // 單字母自然發音表
+        const SINGLE_PHONICS = {
+          'a': { ipa: '/æ/', sound: '短母音「哎」(æ)', word: 'apple', prompt: 'a, /æ/, apple' },
+          'b': { ipa: '/b/', sound: '「ㄅ」(b)', word: 'box', prompt: 'b, /b/, box' },
+          'c': { ipa: '/k/', sound: '「ㄎ」(c)', word: 'cat', prompt: 'c, /k/, cat' },
+          'd': { ipa: '/d/', sound: '「ㄉ」(d)', word: 'desk', prompt: 'd, /d/, desk' },
+          'e': { ipa: '/ɛ/', sound: '短母音「ㄟ」(e)', word: 'egg', prompt: 'e, /ɛ/, egg' },
+          'f': { ipa: '/f/', sound: '咬唇氣音「ㄈ」(f)', word: 'fish', prompt: 'f, /f/, fish' },
+          'g': { ipa: '/ɡ/', sound: '「ㄍ」(g)', word: 'girl', prompt: 'g, /ɡ/, girl' },
+          'h': { ipa: '/h/', sound: '哈氣「ㄏ」(h)', word: 'hot', prompt: 'h, /h/, hot' },
+          'i': { ipa: '/ɪ/', sound: '短母音「一」(i)', word: 'in', prompt: 'i, /ɪ/, in' },
+          'j': { ipa: '/dʒ/', sound: '「ㄐ」(j)', word: 'jet', prompt: 'j, /dʒ/, jet' },
+          'k': { ipa: '/k/', sound: '「ㄎ」(k)', word: 'kite', prompt: 'k, /k/, kite' },
+          'l': { ipa: '/l/', sound: '頂舌「ㄌ」(l)', word: 'ruler', prompt: 'l, /l/, ruler' },
+          'm': { ipa: '/m/', sound: '閉唇「ㄇ」(m)', word: 'marker', prompt: 'm, /m/, marker' },
+          'n': { ipa: '/n/', sound: '鼻音「ㄋ」(n)', word: 'net', prompt: 'n, /n/, net' },
+          'o': { ipa: '/ɑ/', sound: '短母音「啊」(o)', word: 'on', prompt: 'o, /ɑ/, on' },
+          'p': { ipa: '/p/', sound: '爆破「ㄆ」(p)', word: 'pen', prompt: 'p, /p/, pen' },
+          'q': { ipa: '/kw/', sound: '「ㄎㄨ」(qu)', word: 'queen', prompt: 'qu, /kw/, queen' },
+          'r': { ipa: '/r/', sound: '捲舌「ㄖ」(r)', word: 'rainy', prompt: 'r, /r/, rainy' },
+          's': { ipa: '/s/', sound: '吹氣「ㄙ」(s)', word: 'sun', prompt: 's, /s/, sun' },
+          't': { ipa: '/t/', sound: '彈舌氣音「ㄊ」(t)', word: 'twenty', prompt: 't, /t/, twenty' },
+          'u': { ipa: '/ʌ/', sound: '短母音短「阿」(u)', word: 'under', prompt: 'u, /ʌ/, under' },
+          'v': { ipa: '/v/', sound: '上齒咬下唇「ヴ」(v)', word: 'five', prompt: 'v, /v/, five' },
+          'w': { ipa: '/w/', sound: '圓唇「ㄨ」(w)', word: 'windy', prompt: 'w, /w/, windy' },
+          'x': { ipa: '/ks/', sound: '尾音「ㄎㄙ」(x)', word: 'box', prompt: 'x, /ks/, box' },
+          'y': { ipa: '/j/', sound: '滑音「ㄧ」(y)', word: 'yellow', prompt: 'y, /j/, yellow' },
+          'z': { ipa: '/z/', sound: '震動「ㄗ」(z)', word: 'zoo', prompt: 'z, /z/, zoo' },
+          '-': { ipa: 'hyphen', sound: '「連字號」(-)', word: 'hyphen', prompt: 'hyphen' }
+        };
+
+        const item = SINGLE_PHONICS[ch] || { ipa: ch, sound: ch, word: ch, prompt: ch };
+        return {
+          ...item,
+          zhVoice: item.zhVoice || `第 ${index + 1} 格發音是 ${item.sound}，像 ${item.word} 的開頭音喔`
+        };
+      }
+
+      showHintAlert(htmlText, icon = '🎧', isShake = false) {
         if (!this.dom.hintAlertToast) return;
-        if (this.dom.hintAlertText) this.dom.hintAlertText.textContent = text;
+        const iconEl = this.dom.hintAlertToast.querySelector('span:first-child');
+        if (iconEl) iconEl.textContent = icon;
+        if (this.dom.hintAlertText) this.dom.hintAlertText.innerHTML = htmlText;
         this.dom.hintAlertToast.classList.remove('hidden');
+        if (isShake) {
+          this.dom.hintAlertToast.classList.add('animate-shake');
+        } else {
+          this.dom.hintAlertToast.classList.remove('animate-shake');
+        }
         if (this.dom.operationTip) this.dom.operationTip.classList.add('opacity-0');
-        sfx.playTryAgain();
+        sfx.playPop();
 
         if (this.hintToastTimer) clearTimeout(this.hintToastTimer);
         this.hintToastTimer = setTimeout(() => {
           this.dom.hintAlertToast.classList.add('hidden');
           if (this.dom.operationTip) this.dom.operationTip.classList.remove('opacity-0');
-        }, 2800);
+        }, 5000);
       }
 
       giveHint() {
         if (this.isSolved) return;
-
-        // 檢查 Tim 是否有自己動手試過（至少框框內要有 1 個字母）
-        const filledSlotsCount = this.slots.filter(s => s !== null).length;
-        if (filledSlotsCount === 0) {
-          this.showHintAlert('💪 Tim 先自己試試看，至少放一個字母進框框才能求助提示喔！');
-          // 晃動字母池提醒他動手排
-          this.dom.lettersPoolContainer.classList.add('animate-shake');
-          setTimeout(() => this.dom.lettersPoolContainer.classList.remove('animate-shake'), 500);
-          return;
-        }
-
-        // 不讓他一直連續按（一題限制最多使用 1 次提示）
-        if (this.hintUsed) {
-          this.showHintAlert('⭐ 這題已經給過一次提示囉！剩下的空位 Tim 一定可以自己拼出來！');
-          return;
-        }
+        if (this.isHintSpeaking) return;
 
         const currentWord = this.getDisplayWord(this.getCurrentWord());
-        
-        for (let i = 0; i < currentWord.length; i++) {
-          const targetChar = currentWord[i];
-          const currentSlot = this.slots[i];
+        let targetIndex = -1;
 
-          if (!currentSlot || currentSlot.char !== targetChar) {
+        // 尋找第一個錯誤或尚未填入的空格
+        for (let i = 0; i < currentWord.length; i++) {
+          const expectedChar = currentWord[i];
+          const currentSlot = this.slots[i];
+          if (!currentSlot || currentSlot.char !== expectedChar) {
+            targetIndex = i;
+            // 若該格已放了錯誤字母，退回字母池
             if (currentSlot) {
               this.removeLetterFromSlot(i);
-            }
-
-            let availablePoolItem = this.letterPool.find(l => l.char === targetChar && !l.used);
-            if (!availablePoolItem) {
-              const otherSlotIdx = this.slots.findIndex(s => s && s.char === targetChar);
-              if (otherSlotIdx !== -1) {
-                const borrowedPoolId = this.slots[otherSlotIdx].poolId;
-                this.slots[otherSlotIdx] = null;
-                availablePoolItem = this.letterPool.find(l => l.id === borrowedPoolId);
-                availablePoolItem.used = false;
-              }
-            }
-
-            if (availablePoolItem) {
-              this.placeLetterInSlot(availablePoolItem.id, i);
-              this.hintUsed = true;
-              const slotElements = this.dom.slotsContainer.children;
-              if (slotElements[i]) {
-                slotElements[i].classList.add('ring-4', 'ring-emerald-400');
-                setTimeout(() => slotElements[i]?.classList.remove('ring-4', 'ring-emerald-400'), 800);
-              }
             }
             break;
           }
         }
+
+        if (targetIndex === -1) {
+          this.checkIfComplete();
+          return;
+        }
+
+        // 視覺引導：目標空格高亮跳動發光（不直接給答案）
+        const slotElements = this.dom.slotsContainer.children;
+        if (slotElements[targetIndex]) {
+          slotElements[targetIndex].classList.add('ring-4', 'ring-amber-400', 'bg-amber-100', 'scale-105');
+          setTimeout(() => {
+            slotElements[targetIndex]?.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-100', 'scale-105');
+          }, 3500);
+        }
+
+        // 自然發音法引導
+        const guide = this.getPhonicsGuide(currentWord, targetIndex);
+        const alertHtml = `第 <b>${targetIndex + 1}</b> 格發音：<b>${guide.ipa}</b> ${guide.sound}（像 <i>${guide.word}</i>），聽聽看是哪個字母？`;
+        this.showHintAlert(alertHtml, '🎧', false);
+
+        // 語音播報：先念 Phonics 提示音，再中文導引
+        this.isHintSpeaking = true;
+        window.speechSynthesis?.cancel();
+        this.speak(guide.prompt, 0.82, () => {
+          setTimeout(() => {
+            this.speakZh(guide.zhVoice, () => {
+              this.isHintSpeaking = false;
+            });
+          }, 250);
+        });
       }
+
+
 
       checkIfComplete() {
         const isAllFilled = this.slots.every(s => s !== null);
