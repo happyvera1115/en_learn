@@ -3,10 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Bella 的《大家說英語》9月份官方全真單字庫 | Bella's G8 English</title>
+  <title>Bella 的英文單字練習 | Bella's English</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    body { background: #faf7f9 !important; }
+    #study-settings { width: min(94vw, 680px); max-height: 85dvh; padding: 24px; border: 0; border-radius: 24px; color: #334155; }
+    #study-settings::backdrop { background: rgb(30 41 59 / .35); backdrop-filter: blur(4px); }
+    #study-settings nav { margin-top: 16px; gap: 8px; }
+    #study-settings select { padding: 10px; }
+    #game-card { border: 1px solid #ede5eb; box-shadow: 0 12px 40px rgb(65 35 65 / .07); }
+    #game-card.text-only { display: block; max-width: 850px; margin: 0 auto; }
+    #game-card.text-only .word-summary { width: 100%; padding: 8px 0 20px; background: none; border: 0; }
+    #game-card.text-only .question-body { width: 100%; }
+    #game-card.text-only #word-translation { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    #word-hint, #word-note-text { display: none; }
+    #sentence-card { background: #f8f7fc; border: 0; box-shadow: none; }
+    #word-note-badge { background: none; color: #94a3b8; padding: 0; font-size: 11px; }
+    #pool-area { background: none; border: 0; padding: 8px 0; }
+    #typed-answer-form { margin: 12px 0 0; background: none; border: 0; padding: 8px 0; }
+    #word-counter { text-align: center; color: #64748b; font-size: 13px; padding: 4px 12px; }
+    #shuffle-words-btn { margin: 20px auto 0; font-size: 13px; }
+    #study-settings #shuffle-words-btn { display: flex; }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       user-select: none;
@@ -53,11 +71,12 @@
   <header class="w-full max-w-6xl mx-auto px-3 py-1 flex items-center justify-between gap-2 flex-shrink-0">
     <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full shadow-md border border-white/80">
       <span class="text-xl">👧</span>
-      <span class="font-black text-xs sm:text-sm md:text-base text-pink-700">Bella 的《大家說英語》9月號官方單字庫</span>
+      <span id="bank-title" class="font-black text-xs sm:text-sm md:text-base text-pink-700">Bella 的英文單字練習</span>
     </div>
 
     <!-- 星星獎勵與戰績按鈕 -->
     <div class="flex items-center gap-2">
+      <button id="open-settings-btn" type="button" class="bg-white border border-slate-200 text-slate-600 rounded-full px-3 py-2 text-sm font-bold" aria-haspopup="dialog">⚙ 設定</button>
       <div class="flex items-center gap-1 bg-amber-400 text-amber-950 px-3 py-1 rounded-full font-black text-xs sm:text-sm shadow-md">
         <span>⭐</span>
         <span id="user-stars">0</span>
@@ -69,9 +88,31 @@
     </div>
   </header>
 
+  <div id="word-counter" aria-live="polite">準備開始</div>
+
+  <dialog id="study-settings" aria-labelledby="settings-title">
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="settings-title" class="text-xl font-bold">練習設定</h2>
+      <button id="close-settings-btn" type="button" class="bg-indigo-600 text-white rounded-full px-4 py-2 font-bold">完成</button>
+    </div>
+
+  <section class="w-full max-w-6xl mx-auto px-3 py-0.5 text-center text-sm flex-shrink-0">
+    <div class="flex flex-wrap gap-2 justify-center items-center">
+      <label class="font-bold text-pink-800" for="month-select">月份
+        <select id="month-select" class="bg-white border border-pink-200 rounded-lg px-2 py-1"></select>
+      </label>
+      <label class="font-bold text-indigo-800" for="level-select">Level
+        <select id="level-select" class="bg-white border border-indigo-200 rounded-lg px-2 py-1">
+          <option value="easy">1 · 簡單版：選字母</option>
+          <option value="advanced">2 · 高階版：自由拼寫</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
   <!-- 頂部雙層選單 -->
   <!-- 第 1 層：週次切換 (第1週 9/1~4、第2週 9/7~11、第3週 9/14~18、第4週 9/21~25、第5週 9/28~30) -->
-  <nav class="w-full max-w-6xl mx-auto px-2 pt-0.5 pb-1 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap flex-shrink-0" id="week-tabs">
+  <nav class="w-full max-w-7xl mx-auto px-2 pt-0.5 pb-0.5 flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap flex-shrink-0" id="week-tabs">
     <!-- 動態生成週次按鈕 -->
   </nav>
 
@@ -79,12 +120,13 @@
   <nav class="w-full max-w-6xl mx-auto px-2 py-0.5 flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap flex-shrink-0" id="day-tabs">
     <!-- 動態生成天數按鈕 -->
   </nav>
+  </dialog>
 
   <!-- 主遊戲畫面 (大幅放大中央卡片、圖片與文字排版，完美適配平板橫向大螢幕) -->
   <main class="w-full max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-1.5 sm:py-2.5 flex-1 flex flex-col justify-center min-h-0">
     
     <!-- 題目主卡片 (橫向雙欄加寬加高) -->
-    <div class="w-full bg-white/95 backdrop-blur-lg rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl border-4 border-white/90 relative flex flex-col md:flex-row items-center md:items-stretch gap-4 md:gap-7">
+    <div id="game-card" class="w-full bg-white/95 backdrop-blur-lg rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl border-4 border-white/90 relative flex flex-col md:flex-row items-center md:items-stretch gap-4 md:gap-7">
       
       <!-- 已學會標籤 -->
       <div id="word-completed-badge" class="hidden absolute top-3 right-3 sm:top-4 sm:right-4 bg-emerald-500 text-white text-xs sm:text-sm font-black px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 z-10">
@@ -92,9 +134,9 @@
       </div>
 
       <!-- 左側：圖片與單字基本資訊 (放大圖片與字體) -->
-      <div class="w-full md:w-5/12 lg:w-4/12 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-2xl bg-amber-50/75 border border-amber-200/80">
+      <div class="word-summary w-full md:w-5/12 lg:w-4/12 flex flex-col items-center justify-between text-center p-3.5 sm:p-4 rounded-2xl bg-amber-50/75 border border-amber-200/80">
         <!-- 圖片容器 (從原本 36 放大到 48/56，平板上一目了然) -->
-        <div class="relative w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-52 lg:h-52 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl p-2 shadow-inner border-2 border-amber-200 flex items-center justify-center overflow-hidden animate-float mb-2">
+        <div id="word-image-frame" class="relative w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-52 lg:h-52 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-2xl p-2 shadow-inner border-2 border-amber-200 flex items-center justify-center overflow-hidden mb-2">
           <div id="word-image" class="w-full h-full flex items-center justify-center filter drop-shadow">
             <!-- 圖片或 SVG -->
           </div>
@@ -122,10 +164,10 @@
       </div>
 
       <!-- 右側：國二考卷句型 + 拼字槽 + 字母池 (加大間距與排版) -->
-      <div class="w-full md:w-7/12 lg:w-8/12 flex flex-col justify-between">
+      <div class="question-body w-full md:w-7/12 lg:w-8/12 flex flex-col justify-between">
         
         <!-- 官方句型與文意線索區塊 (字體放大，例句更清晰醒目) -->
-        <div class="bg-gradient-to-r from-pink-50 via-rose-50 to-indigo-50 border-2 border-pink-200/90 rounded-2xl p-3 sm:p-3.5 mb-2 shadow-xs">
+        <div id="sentence-card" class="bg-gradient-to-r from-pink-50 via-rose-50 to-indigo-50 border-2 border-pink-200/90 rounded-2xl p-3 sm:p-3.5 mb-2 shadow-xs">
           <div class="flex items-center justify-between gap-2 mb-1.5">
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-0.5 sm:py-1 rounded-md bg-pink-600 text-white font-black text-xs sm:text-sm tracking-wider" id="word-note-badge">
@@ -147,14 +189,14 @@
         </div>
 
         <!-- 拼字空格放置區 (Slots) -->
-        <div class="w-full flex items-center justify-center my-auto py-2 sm:py-3">
+        <div id="tiles-area" class="w-full flex items-center justify-center my-auto py-2 sm:py-3">
           <div id="slots-container" class="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 min-h-[4.5rem] sm:min-h-[5rem]">
             <!-- 動態生成插槽 -->
           </div>
         </div>
 
         <!-- 亂序字母池 (Letters Pool) -->
-        <div class="w-full bg-slate-100/90 rounded-2xl p-3 sm:p-3.5 border-2 border-slate-200 mt-2">
+        <div id="pool-area" class="w-full bg-slate-100/90 rounded-2xl p-3 sm:p-3.5 border-2 border-slate-200 mt-2">
           <div class="flex items-center justify-between mb-1.5 px-1">
             <span class="text-xs sm:text-sm font-black text-slate-500 uppercase tracking-wider">點擊字母排入空格</span>
             <div class="flex items-center gap-2">
@@ -172,6 +214,13 @@
           </div>
         </div>
 
+        <form id="typed-answer-form" class="hidden my-5 bg-indigo-50 rounded-2xl p-4 border border-indigo-200">
+          <label for="typed-answer" class="block font-bold text-indigo-800 mb-2">輸入完整單字或片語</label>
+          <input id="typed-answer" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="w-full rounded-xl border-2 border-indigo-300 p-3 text-xl text-slate-800 bg-white" aria-describedby="answer-message" />
+          <button id="check-answer-btn" type="submit" class="mt-3 bg-indigo-600 text-white font-bold rounded-xl px-5 py-2">檢查答案</button>
+          <p id="answer-message" class="min-h-6 mt-2 text-sm font-bold text-indigo-800" aria-live="polite">大小寫不影響判分，片語請保留空格。</p>
+        </form>
+
       </div>
 
     </div>
@@ -186,9 +235,6 @@
         <span>🔀</span> 隨機洗牌
       </button>
 
-      <div id="word-counter" class="text-slate-700 font-black text-xs sm:text-sm lg:text-base bg-white/90 px-3.5 py-1.5 rounded-full shadow-inner border border-slate-200">
-        1 / 5
-      </div>
 
       <button id="next-word-btn" class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 transition-all active:scale-95 text-xs sm:text-sm lg:text-base">
         下一題 <span>➡️</span>
@@ -270,9 +316,10 @@
 
   <!-- 頁尾宣告 -->
   <footer class="w-full text-center py-1 text-xs text-slate-500 font-medium flex-shrink-0">
-    為 <span class="font-bold text-pink-600">Bella</span> 打造的《大家說英語》9月份官方全真單字複習系統 🎈
+    為 <span class="font-bold text-pink-600">Bella</span> 打造的每月英文單字練習 🎈
   </footer>
 
+  <script src="bella_months.js"></script>
   <script>
     // ==========================================
     // 1. 單字題庫與週次資料庫 (100% 來自雜誌照片)
@@ -2315,7 +2362,7 @@
     "dayLabel": "9/30 (三)"
   }
 ];
-    const weeksConfig = [
+    let weeksConfig = [
   {
     "id": "week1",
     "name": "第 1 週 (9/1~9/4)",
@@ -2539,11 +2586,19 @@
     // ==========================================
     // 4. 主遊戲控制邏輯
     // ==========================================
+    const legacySeptember = { id: 'legacy-september', label: '9 月（原有題庫）', words: allWords,
+      weeks: weeksConfig, source: '原有 9 月題庫（年份未標示），保留既有內容與進度' };
+    const monthBanks = [legacySeptember, ...(typeof BellaMonths !== 'undefined' ? BellaMonths.banks : [])];
+
     class SpellingApp {
       constructor() {
-        this.allWords = [...allWords];
-        this.currentWeek = 'week1';
-        this.currentDay = 'day1'; // 'day1', 'day2', ... , 'review', 'unlearned'
+        this.currentLevel = 'easy';
+        const initial = typeof BellaMonths !== 'undefined' ? BellaMonths.selectInitialLesson(monthBanks) : null;
+        this.bank = initial?.bank || monthBanks.at(-1);
+        this.allWords = [...this.bank.words];
+        weeksConfig = this.bank.weeks;
+        this.currentWeek = initial?.word?.week || 'week1';
+        this.currentDay = initial?.word?.day || 'day1'; // 'day1', 'day2', ... , 'review', 'unlearned'
         this.currentUser = 'Bella';
         this.profiles = this.loadProfiles();
         this.words = this.getFilteredWords();
@@ -2555,11 +2610,83 @@
         this.speechSequenceToken = 0;
 
         this.cacheDom();
+        this.setupStudyControls();
         this.renderWeekTabs();
         this.renderDayTabs();
         this.bindEvents();
         this.renderProfile();
         this.loadWord(0);
+      }
+
+      setupStudyControls() {
+        const settings = document.getElementById('study-settings');
+        document.getElementById('open-settings-btn').addEventListener('click', () => settings.showModal());
+        document.getElementById('close-settings-btn').addEventListener('click', () => settings.close());
+        settings.appendChild(document.getElementById('shuffle-words-btn'));
+        const monthSelect = document.getElementById('month-select');
+        const levelSelect = document.getElementById('level-select');
+        monthBanks.forEach(bank => {
+          const option = document.createElement('option');
+          option.value = bank.id;
+          option.textContent = bank.label;
+          monthSelect.appendChild(option);
+        });
+        monthSelect.value = this.bank.id;
+        monthSelect.addEventListener('change', () => {
+          this.bank = monthBanks.find(bank => bank.id === monthSelect.value) || monthBanks.at(-1);
+          this.allWords = [...this.bank.words];
+          weeksConfig = this.bank.weeks;
+          const initial = typeof BellaMonths !== 'undefined' ? BellaMonths.selectInitialLesson([this.bank]) : null;
+          this.currentWeek = initial?.word?.week || weeksConfig[0].id;
+          this.currentDay = initial?.word?.day || weeksConfig[0].days[0];
+          this.restartStudy();
+        });
+        levelSelect.addEventListener('change', () => {
+          this.currentLevel = levelSelect.value;
+          this.profiles = this.loadProfiles();
+          this.restartStudy();
+        });
+        this.dom.typedAnswer = document.getElementById('typed-answer');
+        this.dom.answerMessage = document.getElementById('answer-message');
+        document.getElementById('typed-answer-form').addEventListener('submit', event => {
+          event.preventDefault();
+          this.checkTypedAnswer();
+        });
+        this.updateStudyLabels();
+      }
+
+      restartStudy() {
+        this.speechSequenceToken++;
+        window.speechSynthesis?.cancel();
+        this.dom.feedbackCard.classList.add('hidden');
+        this.dom.statsModal.classList.add('hidden');
+        this.words = this.getFilteredWords();
+        this.updateStudyLabels();
+        this.renderProfile();
+        this.renderWeekTabs();
+        this.renderDayTabs();
+        this.loadWord(0);
+      }
+
+      updateStudyLabels() {
+        document.getElementById('bank-title').textContent = `Bella 的英文練習 · ${this.bank.label}`;
+        document.title = `Bella · ${this.bank.label} · ${this.currentLevel === 'advanced' ? '自由拼寫' : '選字母'}`;
+        const advanced = this.currentLevel === 'advanced';
+        document.getElementById('tiles-area').classList.toggle('hidden', advanced);
+        document.getElementById('pool-area').classList.toggle('hidden', advanced);
+        document.getElementById('typed-answer-form').classList.toggle('hidden', !advanced);
+      }
+
+      checkTypedAnswer() {
+        if (this.currentLevel !== 'advanced' || this.isSolved || !this.getCurrentWord()) return;
+        const answer = this.dom.typedAnswer.value;
+        if (BellaMonths.answersMatch(answer, this.getCurrentWord().word)) {
+          this.dom.answerMessage.textContent = '答對了！';
+          this.handleSuccess();
+        } else {
+          this.dom.answerMessage.textContent = answer.trim() ? '再試一次！可以再聽一次單字。' : '請先輸入答案。';
+          this.handleFailure();
+        }
       }
 
       getDisplayWord(wordData) {
@@ -2720,7 +2847,7 @@
       }
 
       loadProfiles() {
-        const saved = localStorage.getItem('bella_spelling_profile_v4');
+        const saved = localStorage.getItem(this.currentLevel === 'advanced' ? 'bella_spelling_profile_advanced_v1' : 'bella_spelling_profile_v4');
         if (saved) {
           try {
             return JSON.parse(saved);
@@ -2732,7 +2859,7 @@
       }
 
       saveProfiles() {
-        localStorage.setItem('bella_spelling_profile_v4', JSON.stringify(this.profiles));
+        localStorage.setItem(this.currentLevel === 'advanced' ? 'bella_spelling_profile_advanced_v1' : 'bella_spelling_profile_v4', JSON.stringify(this.profiles));
       }
 
       cacheDom() {
@@ -2802,7 +2929,7 @@
           const masteredCount = weekWordList.filter(w => !!profile.completed[w.id]).length;
           const totalCount = weekWordList.length;
 
-          btn.className = `flex items-center gap-1 px-3 py-1 sm:py-1.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 ${
+          btn.className = `flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-xs transition-all duration-200 ${
             isActive 
               ? 'bg-pink-600 text-white shadow-md scale-105 ring-2 ring-pink-300' 
               : 'bg-white/85 hover:bg-white text-slate-700 shadow-xs border border-slate-200 hover:scale-102'
@@ -3058,10 +3185,15 @@
       renderAllDoneState() {
         this.currentIndex = 0;
         this.isSolved = true;
+        this.dom.typedAnswer.value = '';
+        this.dom.typedAnswer.disabled = true;
+        document.getElementById('check-answer-btn').disabled = true;
         this.dom.wordTranslation.textContent = "全數通關！";
         this.dom.wordPhonics.textContent = "Great Job, Bella! 🌟";
         this.dom.wordHint.textContent = `太強了！Bella 已經掌握此單元所有單字！可以選其他天數或整週總複習喔！`;
-        this.dom.wordCounter.textContent = `0 / 0`;
+        this.dom.wordCounter.textContent = '此範圍已完成';
+        document.getElementById('word-image-frame').classList.add('hidden');
+        document.getElementById('game-card').classList.add('text-only');
         this.dom.wordSentenceDisplay.textContent = "所有文意字彙已通關完成！";
         this.dom.wordNoteText.textContent = "完美達成";
         this.dom.wordImg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="%23fef08a"/><path d="M50 18 L59 36 L79 39 L64 53 L68 73 L50 63 L32 73 L36 53 L21 39 L41 36 Z" fill="%23f59e0b"/><circle cx="50" cy="46" r="6" fill="%23fff"/></svg>`;
@@ -3074,6 +3206,10 @@
       }
 
       loadWord(index) {
+        this.speechSequenceToken++;
+        window.speechSynthesis?.cancel();
+        clearTimeout(this.wordSpeechTimer);
+        clearTimeout(this.successReviewTimer);
         if (!this.words || this.words.length === 0) {
           this.renderAllDoneState();
           return;
@@ -3082,14 +3218,22 @@
         if (index >= this.words.length) index = 0;
         this.currentIndex = index;
         this.isSolved = false;
+        this.dom.typedAnswer.value = '';
+        this.dom.typedAnswer.disabled = false;
+        document.getElementById('check-answer-btn').disabled = false;
+        this.dom.answerMessage.textContent = '大小寫不影響判分，片語請保留空格。';
 
         const wordData = this.getCurrentWord();
         const wordClean = this.getDisplayWord(wordData);
 
-        // 圖片渲染
-        if (wordData.image && !wordData.image.startsWith('<svg') && !wordData.image.startsWith('data:')) {
-          const fallback = wordData.fallbackImage || '';
-          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
+        // 只有確認過意思相符的圖片才顯示，其餘使用文字卡。
+        const showPicture = typeof BellaMonths !== 'undefined' && BellaMonths.hasVerifiedImage(wordData);
+        document.getElementById('word-image-frame').classList.toggle('hidden', !showPicture);
+        document.getElementById('game-card').classList.toggle('text-only', !showPicture);
+        if (!showPicture) {
+          this.dom.wordImg.innerHTML = '';
+        } else if (wordData.image && !wordData.image.startsWith('<svg') && !wordData.image.startsWith('data:')) {
+          this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
         } else if (wordData.image && wordData.image.startsWith('data:image/svg+xml;utf8,')) {
           this.dom.wordImg.innerHTML = decodeURIComponent(wordData.image.replace('data:image/svg+xml;utf8,', ''));
         } else if (wordData.image && wordData.image.startsWith('<svg')) {
@@ -3097,11 +3241,18 @@
         } else if (wordData.image) {
           this.dom.wordImg.innerHTML = `<img src="${wordData.image}" alt="${wordData.translation}" class="w-full h-full object-cover rounded-2xl shadow-sm" />`;
         }
+        this.dom.wordImg.querySelector('img')?.addEventListener('error', () => {
+          document.getElementById('word-image-frame').classList.add('hidden');
+          document.getElementById('game-card').classList.add('text-only');
+          this.dom.wordImg.innerHTML = '';
+        });
 
         this.dom.wordTranslation.textContent = wordData.translation;
         this.dom.wordPhonics.textContent = wordData.phonics || '';
-        this.dom.wordHint.textContent = wordData.hint || '';
-        this.dom.wordCounter.textContent = `${this.currentIndex + 1} / ${this.words.length}`;
+        this.dom.wordHint.textContent = this.currentLevel === 'advanced' ? '聽發音、讀例句，自己拼出答案。' : (wordData.hint || '');
+        this.dom.wordNoteBadge.textContent = this.bank.id === '2026-11' ? '新編練習句' : '原有練習句';
+        const scope = this.currentDay === 'review' ? '整週複習' : this.currentDay === 'unlearned' ? '尚未學過' : (wordData.dayLabel || '練習');
+        this.dom.wordCounter.textContent = `${scope} · 第 ${this.currentIndex + 1} / ${this.words.length} 題 · ${this.currentLevel === 'advanced' ? '自由拼寫' : '選字母'}`;
         this.dom.feedbackCard.classList.add('hidden');
 
         if (this.dom.wordNoteText) {
@@ -3109,7 +3260,11 @@
         }
         if (this.dom.wordSentenceDisplay) {
           let sentText = wordData.sentence || wordData.sentenceComplete || '';
-          const clue = wordData.clue || '';
+          let clue = wordData.clue || '';
+          if (this.currentLevel === 'advanced' && clue) {
+            sentText = sentText.replace(clue, '＿＿＿');
+            clue = '＿＿＿';
+          }
           if (clue && sentText.includes(clue)) {
             sentText = sentText.replace(clue, `<span class="bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded-md font-mono font-black border border-amber-300 shadow-xs">${clue}</span>`);
           }
@@ -3122,10 +3277,10 @@
           completedBadge.classList.toggle('hidden', !isCompleted);
         }
 
-        this.slots = new Array(wordClean.length).fill(null);
+        this.slots = wordClean.split('').map(char => char === ' ' ? {char: ' ', poolId: null} : null);
 
         const chars = wordClean.split('');
-        const lettersWithId = chars.map((ch, idx) => ({ id: idx, char: ch, used: false }));
+        const lettersWithId = chars.map((ch, idx) => ({ id: idx, char: ch, used: false })).filter(item => item.char !== ' ');
         
         let shuffled;
         let attempts = 0;
@@ -3137,7 +3292,7 @@
         this.letterPool = shuffled;
         this.renderBoard();
 
-        setTimeout(() => {
+        this.wordSpeechTimer = setTimeout(() => {
           const sentenceToRead = wordData.sentenceComplete || wordData.sentence;
           if (sentenceToRead) {
             this.speakSentence(sentenceToRead);
@@ -3148,6 +3303,11 @@
       }
 
       renderBoard() {
+        if (this.currentLevel === 'advanced') {
+          this.dom.slotsContainer.innerHTML = '';
+          this.dom.lettersPoolContainer.innerHTML = '';
+          return;
+        }
         this.renderSlots();
         this.renderPool();
       }
@@ -3161,6 +3321,12 @@
 
         this.slots.forEach((slotItem, slotIndex) => {
           const slotEl = document.createElement('div');
+          if (slotItem?.char === ' ') {
+            slotEl.className = 'w-4 sm:w-6';
+            slotEl.setAttribute('aria-label', '片語空格');
+            this.dom.slotsContainer.appendChild(slotEl);
+            return;
+          }
           slotEl.className = `${sizeClass} flex items-center justify-center shadow-inner transition-all duration-200 cursor-pointer select-none ${
             slotItem 
               ? 'bg-amber-300 text-amber-950 border-3 sm:border-4 border-amber-400 shadow-md transform active:scale-95' 
@@ -3277,7 +3443,8 @@
       resetCurrentBoard() {
         sfx.playRemove();
         this.letterPool.forEach(l => l.used = false);
-        this.slots = new Array(this.getCurrentWord().word.length).fill(null);
+        if (!this.getCurrentWord()) return;
+        this.slots = this.getDisplayWord(this.getCurrentWord()).split('').map(char => char === ' ' ? {char: ' ', poolId: null} : null);
         this.renderBoard();
       }
 
@@ -3391,9 +3558,12 @@
         if (this.dom.feedbackWordBox) {
           this.dom.feedbackWordBox.classList.remove('hidden');
 
-          if (word.image && !word.image.startsWith('<svg') && !word.image.startsWith('data:')) {
-            const fallback = word.fallbackImage || '';
-            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=''}else{this.onerror=null;}" data-fb="${fallback}" class="w-full h-full object-cover rounded-xl" />`;
+          const showPicture = typeof BellaMonths !== 'undefined' && BellaMonths.hasVerifiedImage(word);
+          this.dom.feedbackWordImg.classList.toggle('hidden', !showPicture);
+          if (!showPicture) {
+            this.dom.feedbackWordImg.innerHTML = '';
+          } else if (word.image && !word.image.startsWith('<svg') && !word.image.startsWith('data:')) {
+            this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" class="w-full h-full object-cover rounded-xl" />`;
           } else if (word.image && word.image.startsWith('data:image/svg+xml;utf8,')) {
             this.dom.feedbackWordImg.innerHTML = decodeURIComponent(word.image.replace('data:image/svg+xml;utf8,', ''));
           } else if (word.image && word.image.startsWith('<svg')) {
@@ -3401,6 +3571,10 @@
           } else if (word.image) {
             this.dom.feedbackWordImg.innerHTML = `<img src="${word.image}" alt="${word.translation}" class="w-full h-full object-cover rounded-xl" />`;
           }
+          this.dom.feedbackWordImg.querySelector('img')?.addEventListener('error', () => {
+            this.dom.feedbackWordImg.classList.add('hidden');
+            this.dom.feedbackWordImg.innerHTML = '';
+          });
 
           const displayWord = this.getDisplayWord(word);
           this.dom.feedbackSpellingTiles.innerHTML = displayWord.split('').map(char => `
@@ -3415,7 +3589,7 @@
 
         this.dom.feedbackCard.classList.remove('hidden');
         const sentenceToRead = word.sentenceComplete || word.sentence || '';
-        setTimeout(() => {
+        this.successReviewTimer = setTimeout(() => {
           this.playSuccessReviewLoop(word.word, sentenceToRead, 3);
         }, 350);
       }
@@ -3440,7 +3614,7 @@
       showStats() {
         sfx.playPop();
         const profile = this.profiles[this.currentUser] || { stars: 0, completed: {}, history: [] };
-        const completedCount = Object.keys(profile.completed).length;
+        const completedCount = this.allWords.filter(word => !!profile.completed[word.id]).length;
         const totalCount = this.allWords.length;
         const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -3466,8 +3640,8 @@
         this.dom.statsList.innerHTML = `
           <div class="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-4 rounded-2xl shadow-md text-center mb-3">
             <div class="text-3xl mb-1">⭐ ${profile.stars}</div>
-            <div class="font-extrabold text-base">Bella 的《大家說英語》全真戰報</div>
-            <div class="text-xs opacity-90 mt-1">已掌握 ${completedCount} / ${totalCount} 個官方核心單字 (${pct}%)</div>
+            <div class="font-extrabold text-base">${this.bank.label} · ${this.currentLevel === 'advanced' ? '高階版' : '簡單版'}戰報</div>
+            <div class="text-xs opacity-90 mt-1">已掌握 ${completedCount} / ${totalCount} 個單字與片語 (${pct}%)</div>
           </div>
 
           <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-xs text-amber-900 leading-relaxed mb-3">
