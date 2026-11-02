@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f2937" />
+  <title>廖彩杏 168 本有聲書 | 每週英文書單 · YouTube 循環播放</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --card: #fff;
+      --ink: #1f2937;
+      --mute: #6b7280;
+      --line: #e5e1d8;
+      --accent: #e8633a;
+      --accent2: #2f7d6d;
+      --review: #fff6dc;
+      --player-h: 132px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding-bottom: calc(var(--player-h) + 16px);
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--ink); color: #fff;
+      padding: 12px 16px 0;
+    }
+    header h1 { margin: 0; font-size: 18px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    header h1 small { font-weight: 400; color: #cbd5e1; font-size: 12px; }
+    .toolbar { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; align-items: center; }
+    .toolbar input[type=search] {
+      flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 8px; border: 0; font-size: 14px;
+    }
+    .toolbar label { font-size: 13px; color: #e5e7eb; display: flex; gap: 4px; align-items: center; cursor: pointer; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+    .tabs button {
+      flex: none; border: 0; background: transparent; color: #cbd5e1;
+      padding: 8px 12px; font-size: 14px; border-bottom: 3px solid transparent; cursor: pointer;
+    }
+    .tabs button.on { color: #fff; border-color: var(--accent); font-weight: 700; }
+    .tabs button .badge { font-size: 11px; color: #94a3b8; margin-left: 2px; }
+
+    main { width: 100%; min-width: 0; max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .level-head { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 12px; gap: 8px; flex-wrap: wrap; }
+    .level-head h2 { margin: 0; font-size: 18px; }
+    .level-head .sub { color: var(--mute); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+
+    .week { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .week.review { background: var(--review); }
+    .week.current { outline: 3px solid var(--accent); }
+    .week-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .week-top h3 { margin: 0; font-size: 15px; }
+    .week-top h3 .theme { font-weight: 400; color: var(--accent2); font-size: 13px; margin-left: 4px; }
+    .ticks { display: flex; gap: 3px; margin: 8px 0 4px; align-items: center; }
+    .ticks span { font-size: 11px; color: var(--mute); margin-right: 4px; }
+    .ticks button {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line);
+      background: #fafafa; font-size: 11px; cursor: pointer; padding: 0; color: var(--mute);
+    }
+    .ticks button.on { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+    .book { border-top: 1px dashed var(--line); padding: 8px 0 4px; }
+    .book:first-of-type { border-top: 0; }
+    .book-row { display: flex; align-items: center; gap: 6px; }
+    .book-title { flex: 1; font-size: 14px; line-height: 1.3; cursor: pointer; }
+    .book-title .meta { display: block; font-size: 11px; color: var(--mute); }
+    .book.noaudio .book-title { color: var(--mute); }
+    .book.playing .book-title { color: var(--accent); font-weight: 700; }
+    .note { font-size: 11px; color: #b45309; margin: 2px 0 0; }
+
+    .btn {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 5px 8px; font-size: 13px; cursor: pointer; text-decoration: none; color: var(--ink);
+      white-space: nowrap; line-height: 1;
+    }
+    .btn:hover { border-color: var(--ink); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    .tracks { list-style: none; margin: 6px 0 2px; padding: 0 0 0 4px; display: none; }
+    .book.open .tracks { display: block; }
+    .tracks li {
+      font-size: 13px; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: flex; gap: 6px;
+    }
+    .tracks li:hover { background: #f3f0ea; }
+    .tracks li.on { background: #fde8df; color: var(--accent); font-weight: 600; }
+    .tracks li .n { color: var(--mute); width: 1.6em; text-align: right; flex: none; }
+
+    /* player */
+    .player {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: var(--ink); color: #fff; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      box-shadow: 0 -4px 16px rgba(0,0,0,.2);
+    }
+    .player .now { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+    .player .now b { font-size: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player .now .ctx { color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player .now .cnt { color: #94a3b8; flex: none; text-align: right; font-size: 12px; }
+    .seek { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; margin: 6px 0; font-variant-numeric: tabular-nums; }
+    .seek input { flex: 1; accent-color: var(--accent); }
+    .ctrls { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .ctrls button, .ctrls select {
+      background: #374151; color: #fff; border: 0; border-radius: 8px; padding: 8px 10px; font-size: 14px; cursor: pointer;
+    }
+    .ctrls button.big { background: var(--accent); font-size: 18px; padding: 8px 18px; }
+    .ctrls button.on { background: var(--accent2); }
+
+    .toast {
+      position: fixed; left: 50%; bottom: calc(var(--player-h) + 20px); transform: translateX(-50%);
+      background: #111; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; z-index: 30;
+      max-width: 90vw; display: none;
+    }
+    .toast a { color: #fdba74; }
+    .hidden { display: none !important; }
+    footer { color: var(--mute); font-size: 12px; text-align: center; margin: 24px 0; line-height: 1.7; }
+    footer a { color: var(--accent2); }
+    .home-link { color: white; text-decoration: none; }
+    .week-picker { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:10px 0; font-size:13px; }
+    .week-picker select { min-width:0; max-width:65%; padding:7px; border-radius:8px; }
+    .layout { display:grid; grid-template-columns:minmax(300px, 380px) minmax(0, 1fr); max-width:1500px; margin:auto; align-items:start; }
+    header { position:relative; }
+    .video-panel { position:sticky; top:12px; margin:16px 0 16px 16px; padding:12px; background:white; border:1px solid var(--line); border-radius:12px; z-index:9; }
+    .video-frame { width:100%; aspect-ratio:16/9; min-height:200px; background:#111827; border-radius:8px; overflow:hidden; }
+    #youtubePlayer, .video-frame iframe { width:100%; height:100%; min-height:200px; border:0; display:block; }
+    .video-placeholder { padding:30px 16px; color:#e5e7eb; text-align:center; }
+    #videoStatus { font-size:13px; line-height:1.5; margin:10px 0; }
+    .video-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .book-row { flex-wrap:wrap; }
+    .book-title { flex-basis:100%; }
+    .book .meta { display:block; font-size:11px; line-height:1.5; color:var(--mute); font-weight:400; }
+    .week-top { flex-wrap:wrap; }
+    .week-top h3 { flex:1; }
+    .btn { line-height:1.35; }
+    .btn:focus-visible, button:focus-visible, a:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+    dialog { max-width:480px; width:calc(100% - 32px); border:0; border-radius:16px; padding:24px; box-shadow:0 12px 50px #0004; }
+    dialog::backdrop { background:#0008; }
+    dialog h2 { margin-top:0; font-size:20px; }
+    dialog input { width:100%; padding:10px; margin-top:8px; border:1px solid var(--line); border-radius:8px; font-size:16px; }
+    .dialog-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .dialog-hint { color:var(--mute); font-size:12px; line-height:1.6; }
+    #editError { color:#b91c1c; font-size:13px; }
+    @media (max-width:760px) {
+      .layout { display:block; }
+      .video-panel { margin:12px 16px 0; position:relative; top:0; }
+      .video-frame { max-height:280px; }
+      .ctrls { gap:4px; }
+      .ctrls button, .ctrls select { padding:8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a class="home-link" href="index.html" aria-label="回首頁">⌂</a> 📚 每週英文書單 <small id="stats"></small></h1>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="搜尋書名…（跨所有階）" />
+      <label><input type="checkbox" id="onlyAudio" /> 只顯示有影片</label>
+    </div>
+    <div class="week-picker"><label for="weekSelect">跳到週次</label><select id="weekSelect"></select><button id="playSelected" class="btn primary">▶ 本週循環</button></div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+
+  <div class="layout">
+    <aside class="video-panel" aria-label="YouTube 影片播放器">
+      <div class="video-frame"><div id="youtubePlayer"><p class="video-placeholder">選擇一週，按「本週循環」開始播放</p></div></div>
+      <p id="videoStatus" role="status" aria-live="polite">影片會依書單順序播放，播完自動從第一本開始。</p>
+      <div class="video-actions"><a id="openVideo" class="btn hidden" target="_blank" rel="noopener">在 YouTube 開啟</a><button id="editCurrent" class="btn hidden">更換影片</button></div>
+    </aside>
+    <main id="main"></main>
+  </div>
+
+  <footer>
+    書單：廖彩杏《用有聲書輕鬆聽出英語力》168 本、七階 / 84 週（Y1 52 週 + Y2 32 週）。<br />
+    每週 3–4 本，每天固定播 3 次、每次 ≤ 30 分鐘；空白週 = 複習前幾週。<br />
+    影片來源：YouTube 公開朗讀影片；不同版本可能與原書附贈錄音不同。<br />
+    可在每本書按「更換影片」貼上偏好的版本；設定與打勾紀錄儲存在目前瀏覽器。<br />
+    原始音檔：<a id="driveRoot" target="_blank" rel="noopener">Google Drive</a> · <a href="index.html">回到單字拼拼樂</a>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="player" id="player">
+    <div class="now">
+      <div style="min-width:0">
+        <b id="pTrack">選擇每週書單開始播放 ▶</b>
+        <div class="ctx" id="pCtx">—</div>
+      </div>
+      <div class="cnt" id="pCnt"></div>
+    </div>
+    <div class="seek">
+      <span id="tCur">0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" />
+      <span id="tDur">0:00</span>
+    </div>
+    <div class="ctrls">
+      <button id="bPrev" title="上一首">⏮</button>
+      <button id="bBack" title="倒退 10 秒">⟲10</button>
+      <button id="bPlay" class="big" title="播放/暫停">▶</button>
+      <button id="bFwd" title="快轉 10 秒">10⟳</button>
+      <button id="bNext" title="下一首">⏭</button>
+      <button id="bRepeat" title="循環模式">🔁 整週</button>
+      <select id="sRate" title="速度">
+        <option value="0.75">0.75×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.25">1.25×</option>
+      </select>
+      <select id="sSleep" title="定時關閉">
+        <option value="0">⏰ 不定時</option>
+        <option value="15">15 分</option>
+        <option value="30">30 分</option>
+        <option value="45">45 分</option>
+        <option value="60">60 分</option>
+        <option value="-1">本首播完</option>
+      </select>
+    </div>
+  </div>
+
+  <dialog id="videoDialog" aria-labelledby="dialogTitle">
+    <form id="videoForm">
+      <h2 id="dialogTitle">更換影片</h2><p id="editBookTitle"></p>
+      <label for="videoUrl">YouTube 影片網址</label>
+      <input id="videoUrl" type="text" required placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" />
+      <p id="editError" role="alert"></p>
+      <p class="dialog-hint">接受 YouTube、youtu.be、Shorts 網址或 11 碼影片 ID。儲存於此瀏覽器，同一本書各週共用。</p>
+      <div class="dialog-actions"><button type="button" id="restoreVideo" class="btn">還原預設</button><button type="button" id="cancelEdit" class="btn">取消</button><button type="submit" class="btn primary">儲存影片</button></div>
+    </form>
+  </dialog>
+  <script src="liao_data.js"></script>
+  <script src="liao_youtube_data.js"></script>
+  <script src="liao_youtube.js"></script>
+  <script src="liao_player.js"></script>
+</body>
+</html>

@@ -50,7 +50,7 @@
   <canvas id="confetti-canvas"></canvas>
 
   <!-- 頂部導覽列：角色切換與計星榜 -->
-  <header class="w-full max-w-5xl mx-auto px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+  <header class="w-full max-w-5xl mx-auto px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 flex-wrap flex-shrink-0">
     <!-- 學生切換 -->
     <div class="flex items-center gap-2 sm:gap-3 bg-white/85 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md border border-white/80">
       <span class="text-xs sm:text-sm font-black text-slate-500 hidden sm:inline">小朋友：</span>
@@ -69,7 +69,10 @@
     </div>
 
     <!-- 星星獎勵與戰績按鈕 -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center justify-end gap-2 flex-wrap">
+      <a href="liao_168.html" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-full font-black text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95" title="每週英文書單 · YouTube 循環播放">
+        <span>📚</span><span>每週英文書單</span>
+      </a>
       <a href="tim_train_world.html" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 px-3.5 py-1.5 rounded-full font-black text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95">
         <span>🚅</span>
         <span class="hidden sm:inline">鐵道大冒險</span>

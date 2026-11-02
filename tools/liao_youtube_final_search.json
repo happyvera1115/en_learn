@@ -1,0 +1,107 @@
+{
+  "My Very First Mother Goose 3": [
+    {
+      "id": "qUOPmfoWTEU",
+      "title": "My Very First Mother Goose - 3 Songs",
+      "channel": "Matt and Holly Davis",
+      "duration": "1:20",
+      "score": 18.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "eOTP-ObBbTQ",
+      "title": "My First Mother Goose - Read Aloud Flip-Along Picture Book | Brightly Storytime",
+      "channel": "Brightly Storytime",
+      "duration": "3:40",
+      "score": 9.67,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "AHwKOoERPbA",
+      "title": "My First Real Mother Goose 📖 (Classic Nursery Rhymes Book Read Aloud for Babies, Toddlers & Kids!)",
+      "channel": "Bedtime with Us",
+      "duration": "5:02",
+      "score": 9.67,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "Bvc7MEMNTTo",
+      "title": "MY VERY FIRST MOTHER GOOSE",
+      "channel": "더사랑다음세대연구소",
+      "duration": "13:44",
+      "score": 8.33,
+      "coverage": 0.8333333333333334
+    }
+  ],
+  "I am a star book read aloud": [
+    {
+      "id": "TJYK9zkhtEU",
+      "title": "Bitsy Bat School Star \\ By Kaz Windness \\ Children Book Read Aloud",
+      "channel": "Sai Reading Time",
+      "duration": "9:22",
+      "score": 13.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "HtTJiAa3HFM",
+      "title": "I Am A Star by Jessica Pippin- Read Aloud by Goofy Ruby",
+      "channel": "Ruby Gemstone Shares",
+      "duration": "2:03",
+      "score": 10.5,
+      "coverage": 0.75
+    },
+    {
+      "id": "bzC3pEY6W2w",
+      "title": "You Are a Star ⭐ A Kids Bedtime Story Read Aloud about being Confident and Unique!",
+      "channel": "The Book Garden",
+      "duration": "1:28",
+      "score": 10.5,
+      "coverage": 0.75
+    },
+    {
+      "id": "hHTmYBfafLQ",
+      "title": "Touch The Brightest Star - Read Aloud - Children's Books Read Aloud - Bedtime Story ",
+      "channel": "Storybook Moments",
+      "duration": "3:11",
+      "score": 10.5,
+      "coverage": 0.75
+    }
+  ],
+  "I Am a Rock Jean Marzollo scholastic": {
+    "error": "'NoneType' object has no attribute 'group'"
+  },
+  "My Very First Mother Goose nursery rhymes chapter three": [
+    {
+      "id": "xqga11lyAWQ",
+      "title": "My First Mother Goose Nursery Rhymes 🐱🐶 押韻童謠 繞口令|親子共讀|有聲故事書|繪本|Read Aloud|Read Along @KLS_Channel",
+      "channel": "KLS Channel",
+      "duration": "1:59",
+      "score": 9.67,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "AHwKOoERPbA",
+      "title": "My First Real Mother Goose 📖 (Classic Nursery Rhymes Book Read Aloud for Babies, Toddlers & Kids!)",
+      "channel": "Bedtime with Us",
+      "duration": "5:02",
+      "score": 9.67,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "ThD5Yx8Fuic",
+      "title": "Storytime: My Very First Mother Goose",
+      "channel": "Christine Erb",
+      "duration": "6:58",
+      "score": 8.56,
+      "coverage": 0.5555555555555556
+    },
+    {
+      "id": "eOTP-ObBbTQ",
+      "title": "My First Mother Goose - Read Aloud Flip-Along Picture Book | Brightly Storytime",
+      "channel": "Brightly Storytime",
+      "duration": "3:40",
+      "score": 7.44,
+      "coverage": 0.4444444444444444
+    }
+  ]
+}
