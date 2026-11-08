@@ -1,10 +1,5 @@
 // Public YouTube readings selected by book title and author; see tools/liao_youtube_verification.json.
 window.LIAO_YOUTUBE = {
-  "My Very First Mother Goose (Ch 1)": {
-    "id": "6xWWjA7tWpM",
-    "title": "My Very First Mother Goose chapter 1",
-    "channel": "Ms. Kayla's Story Circle"
-  },
   "Brown Bear, Brown Bear, What Do You See?": {
     "id": "f13aaTam3Lg",
     "title": "🐻 Brown Bear, Brown Bear, What Do You See? Animated and Read Aloud for Kids!",
@@ -15,21 +10,10 @@ window.LIAO_YOUTUBE = {
     "title": "Kids Book Read Aloud: The Wheels on the Bus by Raffi - Mama's Book Nook",
     "channel": "Mama's Book Nook"
   },
-  "My Very First Mother Goose (Ch 2)": {
-    "id": "JazJSmwncnc",
-    "title": "“My very first mother goose 2”",
-    "channel": "SMBI Listeners Inc."
-  },
   "Go Away, Mr. Wolf!": {
     "id": "-hiuhb39rw4",
     "title": "Go Away, Mr. Wolf! - by Matthew Price & Atsuko Morozumi  노부영 (read aloud )",
     "channel": "EUNICE books and words"
-  },
-  "My Very First Mother Goose (Ch 3)": {
-    "id": "ThD5Yx8Fuic",
-    "title": "Storytime: My Very First Mother Goose",
-    "channel": "Christine Erb",
-    "note": "同書選讀，非指定章節錄音"
   },
   "Hop on Pop": {
     "id": "62fz9Tv3MWo",

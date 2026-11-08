@@ -34,7 +34,7 @@
         w.reviewOf = last;
       } else {
         (w.books || []).forEach((book, i) => {
-          Object.assign(book, { key:`${w.key}-${i}`, lv, w });
+          Object.assign(book, { key:`${w.key}-${book.originalSlot ?? i}`, lv, w });
           books.push(book);
         });
         pending.push(w);

@@ -59,19 +59,20 @@ test('weekly playback advances and wraps after the final book', async () => {
   const h = harness();
   h.element('#playSelected').onclick(); await h.flush();
   const first = h.player.id;
-  assert.equal(h.element('#pCnt').textContent,'1 / 3');
+  assert.equal(h.element('#pCnt').textContent,'1 / 2');
   h.player.end(); await h.flush();
-  assert.equal(h.element('#pCnt').textContent,'2 / 3');
+  assert.equal(h.element('#pCnt').textContent,'2 / 2');
   assert.notEqual(h.player.id,first);
-  h.player.end(); await h.flush(); h.player.end(); await h.flush();
+  h.player.end(); await h.flush();
   assert.equal(h.player.id,first);
-  assert.equal(h.element('#pCnt').textContent,'1 / 3');
+  assert.equal(h.element('#pCnt').textContent,'1 / 2');
 });
 
-test('review week keeps its selected context and contains the assigned twelve entries', async () => {
+test('review week keeps its selected context and excludes all Mother Goose chapters', async () => {
   const h = harness();
   await h.clickBook({weekplay:'1-5'});
-  assert.equal(h.element('#pCnt').textContent,'1 / 12');
+  assert.doesNotMatch(h.element('#main').innerHTML, /My Very First Mother Goose/i);
+  assert.equal(h.element('#pCnt').textContent,'1 / 9');
   h.player.end(); await h.flush();
   assert.match(h.element('#pCtx').textContent,/第 5 週 · 複習/);
   assert.equal(JSON.parse(h.store.get('liao:lastWeek')),'1-5');
@@ -85,7 +86,7 @@ test('unplayable video stays on its item until explicitly skipped', async () => 
   assert.equal(h.player.loads.length,1);
   assert.match(h.element('#videoStatus').textContent,/不允許/);
   h.element('#bNext').onclick(); await h.flush();
-  assert.equal(h.element('#pCnt').textContent,'2 / 3');
+  assert.equal(h.element('#pCnt').textContent,'2 / 2');
 });
 
 test('restoring an unavailable current source advances and preserves queue continuity', async () => {
@@ -112,7 +113,7 @@ test('removing the only custom source stops playback and clears its controls', a
 
 test('invalid replacement is rejected and valid replacement survives a new page session', async () => {
   const h = harness();
-  await h.clickBook({edit:'1-1-0'});
+  await h.clickBook({edit:'1-1-1'});
   h.element('#videoUrl').value = 'https://youtube.com.evil.com/watch?v=aaaaaaaaaaa';
   h.element('#videoForm').onsubmit({preventDefault(){}});
   assert.match(h.element('#editError').textContent,/有效/);
@@ -126,7 +127,7 @@ test('invalid replacement is rejected and valid replacement survives a new page 
 test('storage failures keep playback usable and show a persistence message', async () => {
   const h = harness({noStorage:true});
   h.element('#playSelected').onclick(); await h.flush();
-  assert.equal(h.element('#pCnt').textContent,'1 / 3');
+  assert.equal(h.element('#pCnt').textContent,'1 / 2');
   assert.match(h.element('#toast').textContent,/無法儲存/);
 });
 
@@ -135,7 +136,7 @@ test('transient missing playback rates do not interrupt advancing the queue', as
   h.element('#playSelected').onclick(); await h.flush();
   assert.doesNotThrow(() => h.player.events.onStateChange({data:1}));
   h.player.end(); await h.flush();
-  assert.equal(h.element('#pCnt').textContent,'2 / 3');
+  assert.equal(h.element('#pCnt').textContent,'2 / 2');
 });
 
 test('timed-out initialization ignores late readiness and retries with a fresh player', async () => {
