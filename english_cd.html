@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原版英文 CD 循環播放器</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f6f3ee;color:#1f2937;font:16px system-ui,sans-serif} main{max-width:760px;margin:auto;padding:24px 16px} a{color:#176559} h1{font-size:1.65rem;margin:.5em 0} section{background:white;border:1px solid #e4dfd6;border-radius:14px;padding:16px;margin:16px 0} .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap} label{font-weight:600} select,button{font:inherit;padding:8px 10px;border:1px solid #b8bfc5;border-radius:8px;background:white;color:inherit} select{max-width:100%} #album{width:100%;margin:6px 0 12px} button{cursor:pointer} button.primary{background:#176559;color:white;border-color:#176559} button[aria-current=true]{background:#e1f2eb;border-color:#176559} audio{width:100%;margin:12px 0} #tracks{padding-left:26px} #tracks li{margin:6px 0} #tracks button{text-align:left;max-width:100%;overflow-wrap:anywhere} small,#status{color:#465568} #now{overflow-wrap:anywhere;margin-bottom:6px}
+</style>
+</head>
+<body><main>
+<a href="liao_168.html">← 返回每週英文書單</a>
+<h1>原版英文 CD 循環播放器</h1>
+<p>選擇起始專輯，播完所有 CD 後會接著播放下一個專輯。</p>
+<p><small>播放清單會略過《My Very First Mother Goose》的音軌。</small></p>
+<section aria-label="音檔來源">
+<p><a href="https://drive.google.com/drive/folders/1UyKYNkgUbj5T1FdtDeeJ32G2t6xzGB48" target="_blank" rel="noopener">開啟 English_CD 資料夾 ↗</a></p>
+<p>建議先從 Drive 下載並解壓，再選擇整個 English_CD 資料夾。音檔只在這台裝置播放，不會上傳。</p>
+<label for="local">選擇本機 MP3 資料夾</label><br><input type="file" id="local" webkitdirectory multiple>
+<p id="source" role="status">目前使用 Drive 線上音檔。若瀏覽器無法播放，請選擇本機資料夾。</p>
+<button id="online" hidden>切回 Drive 音檔</button>
+</section>
+<section aria-label="播放設定">
+<label for="album">起始專輯</label><select id="album"></select>
+<div class="row"><label for="mode">播放方式</label><select id="mode"><option value="all">全部專輯循環</option><option value="album">只循環此專輯</option><option value="once">播到最後停止</option></select><button id="start" class="primary">▶ 開始播放</button></div>
+</section>
+<section aria-label="播放器">
+<h2 id="now">尚未播放</h2><small id="position"></small>
+<audio id="audio" controls preload="none"></audio>
+<div class="row"><button id="prev">上一軌</button><button id="next">下一軌</button><a id="file" hidden target="_blank" rel="noopener">在 Drive 開啟此音軌 ↗</a></div>
+<p id="status" role="status"></p>
+</section>
+<section aria-label="專輯音軌"><h2>專輯音軌</h2><a id="folder" target="_blank" rel="noopener">在 Drive 開啟專輯 ↗</a><ol id="tracks"></ol></section>
+</main>
+<script src="english_cd_data.js"></script><script src="english_cd.js"></script>
+</body></html>
