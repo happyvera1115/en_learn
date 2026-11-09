@@ -2556,6 +2556,41 @@ this.slots = [];
         return wordData.word.toLowerCase();
       }
 
+      speak(text, rate = 0.9, onEnd = null) {
+        window.speechSynthesis?.cancel();
+        this.speakUtterance(text, 'en-US', rate, onEnd);
+      }
+
+      speakZh(text, onEnd = null) {
+        this.speakUtterance(text, 'zh-TW', 0.85, onEnd);
+      }
+
+      speakUtterance(text, lang, rate, onEnd) {
+        const synthesis = window.speechSynthesis;
+        if (!synthesis || typeof SpeechSynthesisUtterance !== 'function') {
+          onEnd?.();
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = rate;
+        utterance.onend = () => onEnd?.();
+        utterance.onerror = ({ error }) => {
+          if (error !== 'canceled' && error !== 'interrupted') onEnd?.();
+        };
+        synthesis.speak(utterance);
+      }
+
+      speakSpelling(word, onEnd = null) {
+        const letters = Array.from(word.toUpperCase(), char => {
+          if (char === '-') return 'hyphen';
+          if (char === ' ') return 'space';
+          return char;
+        });
+        this.speak(letters.join(', ') + '. ' + word, 0.75, onEnd);
+      }
+
       // 開始或點擊聽發音時：唸一次英文、中文，再一次英文、中文，總共兩次
       playBilingualTwice(word, translation, onEnd = null) {
         if (!('speechSynthesis' in window)) {
