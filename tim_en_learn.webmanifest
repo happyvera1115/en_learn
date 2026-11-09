@@ -3,7 +3,7 @@
   "name": "Tim’s English",
   "short_name": "Tim’s English",
   "lang": "zh-TW",
-  "start_url": "./tim_en_learn.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#eff6ff",
