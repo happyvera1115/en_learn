@@ -4,7 +4,7 @@
   "short_name": "Bella’s English",
   "lang": "zh-TW",
   "start_url": "./bella_en_learn.html",
-  "scope": "./",
+  "scope": "./bella_en_learn.html",
   "display": "standalone",
   "background_color": "#faf7f9",
   "theme_color": "#a63c87",

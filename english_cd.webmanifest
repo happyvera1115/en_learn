@@ -4,7 +4,7 @@
   "short_name": "英文 CD",
   "lang": "zh-TW",
   "start_url": "./english_cd.html",
-  "scope": "./",
+  "scope": "./english_cd.html",
   "display": "standalone",
   "background_color": "#f6f3ee",
   "theme_color": "#124c47",
