@@ -1,0 +1,25 @@
+{
+  "id": "./english_cd.html",
+  "name": "每週英文 CD 播放器",
+  "short_name": "英文 CD",
+  "lang": "zh-TW",
+  "start_url": "./english_cd.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f3ee",
+  "theme_color": "#124c47",
+  "icons": [
+    {
+      "src": "images/english-cd-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/english-cd-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
