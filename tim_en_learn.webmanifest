@@ -1,0 +1,25 @@
+{
+  "id": "./tim_en_learn.html",
+  "name": "Tim’s English",
+  "short_name": "Tim’s English",
+  "lang": "zh-TW",
+  "start_url": "./tim_en_learn.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eff6ff",
+  "theme_color": "#235ab4",
+  "icons": [
+    {
+      "src": "images/tim-english-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/tim-english-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
