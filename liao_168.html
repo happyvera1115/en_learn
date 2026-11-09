@@ -162,13 +162,13 @@
       <input type="search" id="q" placeholder="搜尋書名…（跨所有階）" />
       <label><input type="checkbox" id="onlyAudio" /> 只顯示有影片</label>
     </div>
-    <div class="week-picker"><label for="weekSelect">跳到週次</label><select id="weekSelect"></select><button id="playSelected" class="btn primary">▶ 本週循環</button></div>
+    <div class="week-picker"><label for="weekSelect">跳到週次</label><select id="weekSelect"></select><button id="playSelected" class="btn primary">▶ 本週循環</button><label for="weeklySource">循環來源</label><select id="weeklySource"><option value="local">本機 MP3</option><option value="youtube">YouTube</option></select></div>
     <nav class="tabs" id="tabs"></nav>
   </header>
 
   <div class="layout">
     <aside class="video-panel" aria-label="YouTube 影片播放器">
-      <div class="video-frame"><div id="youtubePlayer"><p class="video-placeholder">選擇一週，按「本週循環」開始播放</p></div></div>
+      <div class="video-frame"><div id="youtubePlayer"><p class="video-placeholder">按「播放」看單本影片，或選 YouTube 後按「本週循環」</p></div></div>
       <p id="videoStatus" role="status" aria-live="polite">影片會依書單順序播放，播完自動從第一本開始。</p>
       <div class="video-actions"><a id="openVideo" class="btn hidden" target="_blank" rel="noopener">在 YouTube 開啟</a><button id="editCurrent" class="btn hidden">更換影片</button></div>
     </aside>
@@ -234,6 +234,6 @@
   <script src="liao_data.js"></script>
   <script src="liao_youtube_data.js"></script>
   <script src="liao_youtube.js"></script>
-  <script src="liao_player.js"></script>
+  <script src="liao_player.js?v=local-library"></script>
 </body>
 </html>

@@ -54,3 +54,71 @@ test('weekly CD playback follows the book list and repeats its review block', ()
   assert.deepEqual(nextTrack(albums, {album: 1, track: 0}, 'all'), {album: 0, track: 0});
   assert.equal(weeklyAlbums(weeks[2].books, local).missing.length, 2);
 });
+
+test('local files survive a page refresh and start the requested weekly loop', async () => {
+  let savedLibrary;
+  const settings = new Map();
+  const indexedDB = {
+    open() {
+      const open = {result: {
+        close() {},
+        transaction() {
+          const tx = {
+            objectStore: () => ({
+              get: () => ({result: structuredClone(savedLibrary)}),
+              put: albums => { savedLibrary = structuredClone(albums); return {}; },
+            }),
+          };
+          queueMicrotask(() => tx.oncomplete());
+          return tx;
+        },
+      }};
+      queueMicrotask(() => open.onsuccess());
+      return open;
+    },
+  };
+  function page(search) {
+    const nodes = new Map();
+    const played = [];
+    const get = id => {
+      if (!nodes.has(id)) nodes.set(id, {
+        options: [{}],
+        replaceChildren(...items) { this.value = items[0]?.value ?? ''; },
+        append() {}, setAttribute() {}, pause() {}, load() {}, removeAttribute() {},
+        play() { played.push(this.src); return Promise.resolve(); },
+      });
+      return nodes.get(id);
+    };
+    const context = {
+      window: {location: {search}}, URLSearchParams, indexedDB,
+      URL: {createObjectURL: blob => URL.createObjectURL(blob), revokeObjectURL: url => URL.revokeObjectURL(url)},
+      localStorage: {getItem: k => settings.get(k), setItem: (k, v) => settings.set(k, v)},
+      document: {getElementById: get, createElement: () => get('element')},
+      Option: function (text, value) { this.value = value; },
+    };
+    runInNewContext(['liao_data.js', 'english_cd_data.js', 'english_cd.js']
+      .map(name => readFileSync(require.resolve('../' + name), 'utf8')).join('\n;\n'), context);
+    return {get, played};
+  }
+  const file = new Blob(['MP3 bytes'], {type: 'audio/mpeg'});
+  file.name = '01 Story Song.mp3';
+  file.webkitRelativePath = 'English_CD/ww1/Brown Bear/' + file.name;
+  const first = page('');
+  await first.get('local').onchange({target: {files: [file]}});
+  assert.match(first.get('library-status').textContent, /已儲存/);
+  first.get('week').value = '';
+  first.get('week').onchange();
+  const refreshed = page('');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(refreshed.get('week').value, '');
+  assert.equal(refreshed.get('start').disabled, false);
+  const weekly = page('?week=1-1&play=local');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(weekly.get('now').textContent, /Brown Bear/);
+  assert.equal(weekly.played.length, 1);
+  assert.match(weekly.played[0], /^blob:/);
+  weekly.get('audio').onended();
+  assert.equal(weekly.played.length, 2);
+  assert.match(weekly.get('now').textContent, /Brown Bear/);
+  URL.revokeObjectURL(weekly.played[1]);
+});

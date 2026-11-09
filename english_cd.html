@@ -19,10 +19,11 @@
 <p><small>播放清單會略過《My Very First Mother Goose》的音軌。</small></p>
 <section aria-label="音檔來源">
 <p><a href="https://drive.google.com/drive/folders/1UyKYNkgUbj5T1FdtDeeJ32G2t6xzGB48" target="_blank" rel="noopener">開啟 English_CD 資料夾 ↗</a></p>
-<p>手機已下載 MP3 時，請選擇解壓後的 English_CD 資料夾。重新開啟播放器時可再選一次。音檔只在這台裝置播放。</p>
+<p>選擇手機上已解壓的 English_CD 資料夾。儲存完成後，重新開啟會載入本機歌單。音檔會存一份在此瀏覽器，供這台裝置播放。</p>
 <label for="local">選擇本機 MP3 資料夾</label><br><input type="file" id="local" webkitdirectory multiple>
-<p id="source" role="status">目前使用 Drive 線上音檔。若瀏覽器無法播放，請選擇本機資料夾。</p>
-<button id="online" hidden>切回 Drive 音檔</button>
+<p id="source" role="status">正在載入本機歌單…</p>
+<p id="library-status" role="status"></p>
+<button id="online">切到 Drive 音檔</button>
 </section>
 <section aria-label="播放設定">
 <div class="row"><label for="week">每週英文書單</label><select id="week"></select></div>
@@ -39,5 +40,5 @@
 <section aria-label="專輯音軌"><h2>專輯音軌</h2><a id="folder" target="_blank" rel="noopener">在 Drive 開啟專輯 ↗</a><ol id="tracks"></ol></section>
 </main>
 <script src="liao_data.js"></script>
-<script src="english_cd_data.js"></script><script src="english_cd.js"></script>
+<script src="english_cd_data.js"></script><script src="english_cd.js?v=local-library"></script>
 </body></html>

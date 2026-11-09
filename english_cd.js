@@ -90,6 +90,23 @@ function weeklyAlbums(books, local) {
   return { albums, missing };
 }
 
+// Save the parsed album structure because a stored File need not retain webkitRelativePath.
+function storedAlbums(albums) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('english-cd-local', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('library');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction('library', albums ? 'readwrite' : 'readonly');
+      const store = tx.objectStore('library');
+      const request = albums ? store.put(albums, 'albums') : store.get('albums');
+      tx.oncomplete = () => { db.close(); resolve(request.result); };
+      tx.onabort = () => { db.close(); reject(tx.error); };
+    };
+  });
+}
+
 if (typeof module !== 'undefined') module.exports = { nextTrack, localAlbums, isExcludedTrack, cdWeeks, weeklyAlbums };
 
 if (typeof window !== 'undefined') {
@@ -97,7 +114,16 @@ if (typeof window !== 'undefined') {
   const $ = id => document.getElementById(id);
   const audio = $('audio');
   const weeks = cdWeeks(window.LIAO_DATA.levels);
-  let localSource;
+  const params = new URLSearchParams(window.location.search);
+  const readSetting = (key, fallback) => {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+  };
+  const saveSetting = (key, value) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  };
+  let localLibrary;
+  let useLocal = params.get('play') === 'local' || readSetting('cd:source', 'local') === 'local';
+  let playRequested = params.get('play') === 'local';
   let current, objectUrl, failed = 0, generation = 0;
 
   function populate() {
@@ -163,37 +189,53 @@ if (typeof window !== 'undefined') {
     audio.load();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = undefined;
+    const localSource = useLocal ? localLibrary || [] : undefined;
     const week = weeks.find(entry => entry.key === $('week').value);
     const playlist = week ? weeklyAlbums(week.books, localSource) : null;
     albums = playlist ? playlist.albums : (localSource || window.ENGLISH_CD);
     $('mode').disabled = !!week;
     $('mode').options[0].textContent = week ? '當週書單循環' : '全部專輯循環';
-    if (week) $('mode').value = 'all';
+    $('mode').value = week ? 'all' : albumMode;
     $('start').disabled = !albums.length;
     $('album').disabled = !albums.length;
     $('week-status').textContent = playlist
       ? `${week.label} · ${albums.length} 本 · ${albums.reduce((sum, album) => sum + album.tracks.length, 0)} 軌${playlist.missing.length ? '。缺少對應音檔：' + playlist.missing.join('、') : ''}`
       : '';
-    $('online').hidden = !localSource;
+    $('online').textContent = useLocal ? '切到 Drive 音檔' : '切到本機 MP3';
     $('file').hidden = true;
     $('now').textContent = '尚未播放';
     $('position').textContent = $('status').textContent = '';
-    $('source').textContent = localSource ? `已載入本機資料夾，共 ${localSource.reduce((n, a) => n + a.tracks.length, 0)} 軌。` : '目前使用 Drive 線上音檔。若瀏覽器無法播放，請選擇本機資料夾。';
+    $('source').textContent = useLocal
+      ? (localLibrary ? `本機歌單已載入，共 ${localLibrary.reduce((n, a) => n + a.tracks.length, 0)} 軌。` : '請選擇手機上已解壓的 English_CD 資料夾。')
+      : '目前使用 Drive 線上音檔。';
     populate();
   }
-  $('local').onchange = event => {
+  $('local').onchange = async event => {
     const files = event.target.files;
     if (!files.length) return;
     const local = localAlbums(files);
     event.target.value = '';
     if (!local.length) $('source').textContent = '這個資料夾沒有可加入的 MP3，請選擇解壓後的 English_CD 資料夾。';
     else {
-      localSource = local;
+      localLibrary = local;
+      useLocal = true;
+      saveSetting('cd:source', 'local');
       refreshPlaylist();
+      startRequestedPlaylist();
+      $('library-status').textContent = '正在儲存本機歌單…';
+      try {
+        await storedAlbums(local);
+        if (localLibrary === local) $('library-status').textContent = '本機歌單已儲存，下次開啟會自動載入。';
+        window.navigator?.storage?.persist?.().catch(() => {});
+      } catch {
+        if (localLibrary === local) $('library-status').textContent = '這次可播放，但瀏覽器無法儲存歌單。請檢查可用空間後再選一次。';
+      }
     }
   };
   $('online').onclick = () => {
-    localSource = undefined;
+    useLocal = !useLocal;
+    playRequested = false;
+    saveSetting('cd:source', useLocal ? 'local' : 'drive');
     refreshPlaylist();
   };
   $('start').onclick = () => {
@@ -219,7 +261,7 @@ if (typeof window !== 'undefined') {
     if (!current) return;
     const limit = $('mode').value === 'album' ? albums[current.album].tracks.length : albums.reduce((n, a) => n + a.tracks.length, 0);
     if (++failed >= Math.min(limit, 5)) {
-      $('status').textContent = localSource
+      $('status').textContent = useLocal
         ? '連續無法讀取音軌，已停止。請重新選取本機資料夾，或選其他專輯重試。'
         : 'Drive 音軌無法在此頁播放。請選擇已下載的本機 MP3 資料夾。';
       return;
@@ -228,20 +270,40 @@ if (typeof window !== 'undefined') {
   };
   const weekSelect = $('week');
   weekSelect.replaceChildren(...weeks.map(week => new Option(week.label, week.key)), new Option('全部專輯', ''));
-  let savedWeek;
-  try {
-    savedWeek = JSON.parse(localStorage.getItem('liao:lastWeek'));
-  } catch {}
-  const requestedWeek = new URLSearchParams(window.location.search).get('week');
-  weekSelect.value = [requestedWeek, savedWeek].find(key => weeks.some(week => week.key === key)) || weeks[0]?.key || '';
+  const requestedWeek = params.get('week');
+  const validWeek = key => weeks.some(week => week.key === key);
+  const savedWeek = readSetting('liao:lastWeek', weeks[0]?.key);
+  weekSelect.value = validWeek(requestedWeek) ? requestedWeek
+    : readSetting('cd:allAlbums', false) ? ''
+    : validWeek(savedWeek) ? savedWeek : weeks[0]?.key || '';
+  let albumMode = readSetting('cd:mode', 'all');
+  if (!['all', 'album', 'once'].includes(albumMode)) albumMode = 'all';
+  $('mode').onchange = () => {
+    albumMode = $('mode').value;
+    saveSetting('cd:mode', albumMode);
+  };
   function rememberWeek() {
-    if (weekSelect.value) {
-      try { localStorage.setItem('liao:lastWeek', JSON.stringify(weekSelect.value)); } catch {}
-    }
+    saveSetting('cd:allAlbums', !weekSelect.value);
+    if (weekSelect.value) saveSetting('liao:lastWeek', weekSelect.value);
+  }
+  function startRequestedPlaylist() {
+    if (!playRequested || !albums.length) return;
+    playRequested = false;
+    $('start').onclick();
   }
   weekSelect.onchange = () => {
+    playRequested = false;
     rememberWeek();
     refreshPlaylist();
   };
   refreshPlaylist();
+  storedAlbums().then(saved => {
+    if (!localLibrary && saved?.length) {
+      localLibrary = saved;
+      if (useLocal) {
+        refreshPlaylist();
+        startRequestedPlaylist();
+      }
+    }
+  }).catch(() => {});
 }

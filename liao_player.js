@@ -23,6 +23,8 @@
     ended: false, ready: false, failed: false
   };
   if (!['list','one','off'].includes(state.repeat)) state.repeat = 'list';
+  const weeklySource = $('#weeklySource');
+  weeklySource.value = read('weeklySource', 'local') === 'youtube' ? 'youtube' : 'local';
   const books = [], weeks = {};
   D.levels.forEach(lv => {
     let pending = [], last = [];
@@ -88,7 +90,7 @@
     const available = list.filter(source).length;
     return `<section class="week ${w.review ? 'review' : ''} ${w.key === state.lastWeek ? 'current' : ''}" data-week="${w.key}">
       <div class="week-top"><h3>${label(lv,w)}${w.review ? '<span class="theme">複習週</span>' : w.theme ? `<span class="theme">${esc(w.theme)}</span>` : ''}</h3>
-      <button class="btn primary" data-weekplay="${w.key}" ${available ? '' : 'disabled'}>▶ ${w.review ? '複習' : '本週'}循環</button></div>
+      <button class="btn primary" data-weekplay="${w.key}" ${available || weeklySource.value === 'local' ? '' : 'disabled'}>▶ ${w.review ? '複習' : '本週'}循環</button></div>
       ${ticksHtml(w)}<p class="note">${available} / ${list.length} 本已有影片</p>${w.review ? `<details><summary>查看複習書單（${list.length} 本）</summary>${list.map(bookHtml).join('')}</details>` : list.map(bookHtml).join('')}</section>`;
   }
   function renderMain() {
@@ -198,6 +200,12 @@
     state.repeat = 'list'; save('repeat',state.repeat); syncRepeat();
     startQueue(weeklyBooks(w), `${label(lv,w)}${w.review ? ' · 複習' : ' · 本週書單'}`, key);
   }
+  function startWeeklyLoop(key) {
+    if (!weeks[key]) return;
+    if (weeklySource.value === 'youtube') return playWeek(key);
+    save('lastWeek', key);
+    window.location.href = `english_cd.html?week=${encodeURIComponent(key)}&play=local`;
+  }
   function next(auto = false) {
     const index = nextIndex(state.index,state.queue.length,state.repeat,auto);
     if (index < 0) { $('#bPlay').textContent = '▶'; setStatus('本週書單播放完畢。'); return; }
@@ -301,14 +309,18 @@
     renderTabs(); renderMain(); selectWeek(w.key);
     document.querySelector(`[data-week="${w.key}"]`)?.scrollIntoView({block:'center',behavior:'smooth'});
   };
-  $('#playSelected').onclick = () => playWeek($('#weekSelect').value);
+  weeklySource.onchange = () => {
+    save('weeklySource', weeklySource.value);
+    renderMain();
+  };
+  $('#playSelected').onclick = () => startWeeklyLoop($('#weekSelect').value);
   $('#q').oninput = renderMain;
   $('#onlyAudio').onchange = renderMain;
   $('#main').onclick = event => {
     const button = event.target.closest('[data-weekplay],[data-bookplay],[data-edit],[data-tick]');
     if (!button) return;
     const d = button.dataset;
-    if (d.weekplay) playWeek(d.weekplay);
+    if (d.weekplay) startWeeklyLoop(d.weekplay);
     else if (d.bookplay) {
       const b = byKey[d.bookplay];
       // Clicking a book inside a review card retains that review week's context.

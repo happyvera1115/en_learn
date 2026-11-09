@@ -5,7 +5,10 @@ const vm = require('node:vm');
 
 function harness(options = {}) {
   const elements = new Map();
-  const store = new Map(Object.entries(options.store || {}));
+  const store = new Map(Object.entries({
+    'liao:weeklySource': JSON.stringify(options.weeklySource || 'youtube'),
+    ...options.store,
+  }));
   const element = id => {
     if (!elements.has(id)) elements.set(id, {
       value: id === '#sRate' ? '1' : id === '#q' ? '' : '0',
@@ -19,7 +22,7 @@ function harness(options = {}) {
   let player, created = 0;
   const timeouts = [];
   const context = {
-    window: {}, URL, location:{origin:'http://localhost:3000',protocol:'http:'},
+    window: {location: {}}, URL, location:{origin:'http://localhost:3000',protocol:'http:'},
     document:{querySelector:element,querySelectorAll:()=>[],addEventListener(){},head:{append(){}},createElement:()=>element('script')},
     localStorage:{getItem:k=>store.get(k) ?? null,setItem:(k,v)=>{if(options.noStorage) throw Error('blocked'); store.set(k,v);}},
     setTimeout:(fn,delay)=>{timeouts.push({fn,delay});return timeouts.length;},clearTimeout(){},setInterval(){},
@@ -54,6 +57,19 @@ function harness(options = {}) {
   }
   return {element,store,context,flush,clickBook,get player(){return player;},timeouts};
 }
+
+test('weekly loop defaults to local MP3 and opens the selected week', async () => {
+  const h = harness({store: {'liao:weeklySource': null}});
+  assert.equal(h.element('#weeklySource').value, 'local');
+  h.element('#playSelected').onclick();
+  assert.equal(h.context.window.location.href, 'english_cd.html?week=1-1&play=local');
+  await h.clickBook({weekplay:'1-5'});
+  assert.equal(h.context.window.location.href, 'english_cd.html?week=1-5&play=local');
+  assert.equal(h.player, undefined);
+  h.element('#weeklySource').value = 'youtube';
+  h.element('#weeklySource').onchange();
+  assert.equal(JSON.parse(h.store.get('liao:weeklySource')), 'youtube');
+});
 
 test('weekly playback advances and wraps after the final book', async () => {
   const h = harness();
