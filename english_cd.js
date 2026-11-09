@@ -109,7 +109,7 @@ function storedAlbums(albums) {
 
 if (typeof module !== 'undefined') module.exports = { nextTrack, localAlbums, isExcludedTrack, cdWeeks, weeklyAlbums };
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && document.getElementById('audio') && window.ENGLISH_CD) {
   let albums = window.ENGLISH_CD;
   const $ = id => document.getElementById(id);
   const audio = $('audio');
