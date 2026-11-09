@@ -308,8 +308,8 @@
   },
   {
     "id": "grade3_u2",
-    "name": "三年級 Unit 2",
-    "icon": "🔢"
+    "name": "三年級 Unit 2 數字",
+    "icon": "🚆"
   },
   {
     "id": "grade3_u3",
@@ -327,6 +327,60 @@
     "icon": "🚌"
   }
 ];
+
+    const transitNumberWords = [
+      [1, "one", "一", "wʌn"],
+      [2, "two", "二", "tuː"],
+      [3, "three", "三", "θriː"],
+      [4, "four", "四", "fɔɹ"],
+      [5, "five", "五", "faɪv"],
+      [6, "six", "六", "sɪks"],
+      [7, "seven", "七", "ˈsɛvən"],
+      [8, "eight", "八", "eɪt"],
+      [9, "nine", "九", "naɪn"],
+      [10, "ten", "十", "tɛn"],
+      [11, "eleven", "十一", "ɪˈlɛvən"],
+      [12, "twelve", "十二", "twɛlv"],
+      [13, "thirteen", "十三", "ˌθɝˈtiːn", "尾音聽 teen"],
+      [14, "fourteen", "十四", "ˌfɔɹˈtiːn"],
+      [15, "fifteen", "十五", "ˌfɪfˈtiːn", "尾音聽 teen"],
+      [16, "sixteen", "十六", "ˌsɪksˈtiːn"],
+      [17, "seventeen", "十七", "ˌsɛvənˈtiːn"],
+      [18, "eighteen", "十八", "ˌeɪˈtiːn"],
+      [19, "nineteen", "十九", "ˌnaɪnˈtiːn"],
+      [20, "twenty", "二十", "ˈtwɛnti"],
+      [25, "twenty-five", "二十五", "ˌtwɛntiˈfaɪv", "中間有連字號"],
+      [30, "thirty", "三十", "ˈθɝti", "尾音聽 ty"],
+      [40, "forty", "四十", "ˈfɔɹti", "拼字沒有 u"],
+      [50, "fifty", "五十", "ˈfɪfti", "尾音聽 ty"],
+      [60, "sixty", "六十", "ˈsɪksti"],
+      [70, "seventy", "七十", "ˈsɛvənti"],
+      [80, "eighty", "八十", "ˈeɪti"],
+      [90, "ninety", "九十", "ˈnaɪnti"],
+      [100, "one hundred", "一百", "wʌn ˈhʌndɹəd", "兩字中間選 ␣"]
+    ].map(([number, word, translation, phonics, spellingTip], index) => {
+      const signs = [
+        { icon: "🚆", label: "火車月台", hint: "火車月台 " + number + " 號", color: "#1d4ed8" },
+        { icon: "🚌", label: "公車路線", hint: number + " 路公車", color: "#0f766e" },
+        { icon: "🚄", label: "高鐵車次", hint: "高鐵 " + number + " 車次", color: "#c2410c" }
+      ];
+      const sign = signs[index % signs.length];
+      return {
+        id: "g3_u2_" + word.replace(/[- ]/g, "_"),
+        word,
+        category: "grade3_u2",
+        translation: `${translation} (${number})`,
+        phonics: `/${phonics}/`,
+        hint: spellingTip ? `${sign.hint} · ${spellingTip}` : sign.hint,
+        image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="${sign.hint}">
+          <rect x="4" y="4" width="152" height="152" rx="20" fill="${sign.color}"/>
+          <text x="80" y="45" text-anchor="middle" font-size="30">${sign.icon}</text>
+          <text x="80" y="70" text-anchor="middle" font-size="17" font-weight="700" fill="white">${sign.label}</text>
+          <rect x="18" y="80" width="124" height="60" rx="10" fill="white"/>
+          <text x="80" y="125" text-anchor="middle" font-size="46" font-weight="900" fill="${sign.color}">${number}</text>
+        </svg>`
+      };
+    });
 
     const initialWords = [
   {
@@ -1179,67 +1233,7 @@
     "image": "images/hot.jpg",
     "fallbackImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"
   },
-    // Unit 2: Numbers (數字)
-  {
-    "id": "g3_u2_fifteen",
-    "word": "FIFTEEN",
-    "category": "grade3_u2",
-    "translation": "十五 (15)",
-    "phonics": "/ˌfɪfˈtiːn/",
-    "hint": "數字 15",
-    "image": "images/u2_15.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
-  {
-    "id": "g3_u2_twenty",
-    "word": "TWENTY",
-    "category": "grade3_u2",
-    "translation": "二十 (20)",
-    "phonics": "/ˈtwen.ti/",
-    "hint": "數字 20",
-    "image": "images/u2_20.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
-  {
-    "id": "g3_u2_thirty",
-    "word": "THIRTY",
-    "category": "grade3_u2",
-    "translation": "三十 (30)",
-    "phonics": "/ˈθɝː.ti/",
-    "hint": "數字 30",
-    "image": "images/u2_30.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
-  {
-    "id": "g3_u2_forty",
-    "word": "FORTY",
-    "category": "grade3_u2",
-    "translation": "四十 (40)",
-    "phonics": "/ˈfɔːr.ti/",
-    "hint": "數字 40 (注意沒有 u 喔)",
-    "image": "images/u2_40.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
-  {
-    "id": "g3_u2_fifty",
-    "word": "FIFTY",
-    "category": "grade3_u2",
-    "translation": "五十 (50)",
-    "phonics": "/ˈfɪf.ti/",
-    "hint": "數字 50",
-    "image": "images/u2_50.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
-  {
-    "id": "g3_u2_twenty_five",
-    "word": "TWENTY-FIVE",
-    "category": "grade3_u2",
-    "translation": "二十五 (25)",
-    "phonics": "/ˌtwen.tiˈfaɪv/",
-    "hint": "數字 25",
-    "image": "images/u2_25.jpg",
-    "fallbackImage": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80"
-},
+    ...transitNumberWords,
   {
     "id": "g3_u3_book",
     "word": "BOOK",
@@ -2912,7 +2906,7 @@ this.slots = [];
           slotEl.dataset.slotIndex = slotIndex;
 
           if (slotItem) {
-            slotEl.textContent = slotItem.char;
+            slotEl.textContent = slotItem.char === ' ' ? '␣' : slotItem.char;
             slotEl.addEventListener('click', () => {
               if (this.isSolved) return;
               this.removeLetterFromSlot(slotIndex);
@@ -2956,7 +2950,8 @@ this.slots = [];
               ? 'opacity-20 pointer-events-none bg-slate-200 border-2 border-slate-300 text-slate-400 scale-90' 
               : 'bg-gradient-to-b from-sky-400 to-blue-500 text-white border-b-4 border-blue-700 active:border-b-0 active:translate-y-1 hover:scale-105 active:scale-95 cursor-grab'
           }`;
-          card.textContent = item.char;
+          card.textContent = item.char === ' ' ? '␣' : item.char;
+          if (item.char === ' ') card.setAttribute('aria-label', '空格');
           card.dataset.poolId = item.id;
           card.draggable = !item.used && !this.isSolved;
 
@@ -3159,6 +3154,11 @@ this.slots = [];
           }, 3500);
         }
 
+        if (currentWord[targetIndex] === ' ') {
+          this.showHintAlert("兩個單字之間要放 <b>␣ 空格</b>", "💡");
+          return;
+        }
+
         // 自然發音法引導
         const guide = this.getPhonicsGuide(currentWord, targetIndex);
         const alertHtml = `第 <b>${targetIndex + 1}</b> 格發音：<b>${guide.ipa}</b> ${guide.sound}（像 <i>${guide.word}</i>），聽聽看是哪個字母？`;
@@ -3277,7 +3277,7 @@ this.slots = [];
           // 正確字母拼字方塊（預設小寫）
           const displayWord = this.getDisplayWord(word);
           this.dom.feedbackSpellingTiles.innerHTML = displayWord.split('').map(char => `
-            <span class="inline-flex items-center justify-center w-7 h-8 sm:w-8 sm:h-9 rounded-lg bg-indigo-500 text-white font-black text-base sm:text-lg shadow-sm">${char}</span>
+            <span class="inline-flex items-center justify-center w-7 h-8 sm:w-8 sm:h-9 rounded-lg bg-indigo-500 text-white font-black text-base sm:text-lg shadow-sm">${char === ' ' ? '␣' : char}</span>
           `).join('');
 
           this.dom.feedbackWordText.textContent = displayWord;
