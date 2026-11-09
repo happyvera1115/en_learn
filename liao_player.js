@@ -56,10 +56,15 @@
     toastTimer = setTimeout(() => { $('#toast').style.display = 'none'; }, 6000);
   }
   function setStatus(message) { $('#videoStatus').textContent = message; }
+  function selectWeek(key) {
+    $('#weekSelect').value = key;
+    const link = $('#weeklyCD');
+    if (link) link.href = `english_cd.html?week=${encodeURIComponent(key)}`;
+  }
   function renderTabs() {
     $('#tabs').innerHTML = D.levels.map(lv => `<button data-level="${lv.level}" class="${lv.level === state.level ? 'on' : ''}">${lv.level} 階 · Year ${lv.year}</button>`).join('');
     $('#weekSelect').innerHTML = Object.entries(weeks).map(([key,{lv,w}]) => `<option value="${key}">${label(lv,w)}${w.review ? ' · 複習週' : ''}</option>`).join('');
-    $('#weekSelect').value = state.lastWeek;
+    selectWeek(state.lastWeek);
   }
   function ticksHtml(w) {
     const ticks = Array.isArray(state.ticks[w.key]) ? state.ticks[w.key] : [];
@@ -183,7 +188,7 @@
     state.ctx = ctx;
     state.lastWeek = weekKey;
     save('lastWeek', weekKey);
-    $('#weekSelect').value = weekKey;
+    selectWeek(weekKey);
     if (queue.length < list.length) toast(`已加入 ${queue.length} 本；${list.length-queue.length} 本尚無影片，可按「更換影片」補上。`);
     play(0);
     $('.video-panel').scrollIntoView({block:'start',behavior:'smooth'});
@@ -287,13 +292,13 @@
     save('level',state.level);
     $('#q').value = ''; $('#onlyAudio').checked = false;
     renderTabs(); renderMain();
-    $('#weekSelect').value = D.levels.find(lv => lv.level === state.level).weeks[0].key;
+    selectWeek(D.levels.find(lv => lv.level === state.level).weeks[0].key);
   };
   $('#weekSelect').onchange = event => {
     const {lv,w} = weeks[event.target.value];
     state.level = lv.level;
     $('#q').value = ''; $('#onlyAudio').checked = false;
-    renderTabs(); renderMain(); $('#weekSelect').value = w.key;
+    renderTabs(); renderMain(); selectWeek(w.key);
     document.querySelector(`[data-week="${w.key}"]`)?.scrollIntoView({block:'center',behavior:'smooth'});
   };
   $('#playSelected').onclick = () => playWeek($('#weekSelect').value);

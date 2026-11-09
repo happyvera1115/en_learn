@@ -27,12 +27,77 @@ function localAlbums(files) {
   return albums;
 }
 
-if (typeof module !== 'undefined') module.exports = { nextTrack, localAlbums, isExcludedTrack };
+function cdWeeks(levels) {
+  return levels.flatMap(level => {
+    let pending = [];
+    let review = [];
+    return level.weeks.map(week => {
+      if (week.review && pending.length) {
+        review = pending;
+        pending = [];
+      }
+      if (!week.review) pending.push(...(week.books || []));
+      return {
+        key: `${level.level}-${week.week}`,
+        label: `Year ${level.year} · 第 ${week.week} 週${week.review ? ' · 複習週' : ''}`,
+        books: week.review ? review : (week.books || []),
+      };
+    });
+  });
+}
+
+const titleKey = title => title.toLowerCase().normalize('NFKC').replace(/[^a-z0-9]/g, '');
+const cdAliases = {
+  brownbearbrownbearwhatdoyousee: ['Brown Bear'],
+  fivelittlemonkeysjumpingonthebed: ['Five Little Monkeys Jumping On The Bed Eileen Christelow'],
+  fivelittlemeninaflyingsaucer: ['Five Little Men'],
+  greeneggsandham: ['Green Eggs and Ham Jason Alexander'],
+  apeinacapeanalphabetofoddanimals: ['Ape in A ape An Alphabet of Odd Animals'],
+  sheepinajeep: ['Sheep in A Jeep Nancy Shaw'],
+  rosieswalk: ['Rosie s Walk Pat Hutchins'],
+  todayismonday: ['Today is Monday by Eric Carle music', 'Today is Monday by Eric Carle Read Aloud'],
+  hattieandthefox: ['Hattie and the Fox Mem Fox and Paperdoll Patrol', 'Hattie and the Fox JYBOOKS'],
+};
+
+function weeklyAlbums(books, local) {
+  const missing = [];
+  const albums = [];
+  for (const book of books) {
+    if (isExcludedTrack(book.title)) continue;
+    let tracks;
+    if (local) {
+      const key = titleKey(book.title);
+      const titles = new Set([key, ...(cdAliases[key] || []).map(titleKey)]);
+      for (const album of local) {
+        const matches = album.tracks.filter(track => {
+          const folders = [album.name, ...track.disc.split(' / ')];
+          const trackTitle = titleKey(track.name.replace(/^\d+[\s._-]+/, ''));
+          if (book.note?.includes('可能放錯') && ['wilt', 'longwaytoclimb'].includes(trackTitle)) return false;
+          return folders.some(folder => titles.has(titleKey(folder))) ||
+            titles.has(trackTitle);
+        });
+        if (matches.length) {
+          tracks = matches;
+          break;
+        }
+      }
+    } else if (!book.note?.includes('可能放錯')) {
+      tracks = (book.tracks || []).filter(track => track.id && !isExcludedTrack(track.name));
+    }
+    if (tracks?.length) albums.push({ name: book.title, id: local ? undefined : book.folder, tracks });
+    else missing.push(book.title);
+  }
+  return { albums, missing };
+}
+
+if (typeof module !== 'undefined') module.exports = { nextTrack, localAlbums, isExcludedTrack, cdWeeks, weeklyAlbums };
 
 if (typeof window !== 'undefined') {
   let albums = window.ENGLISH_CD;
   const $ = id => document.getElementById(id);
   const audio = $('audio');
+  const weeks = cdWeeks(window.LIAO_DATA.levels);
+  let localSource;
   let current, objectUrl, failed = 0, generation = 0;
 
   function populate() {
@@ -43,6 +108,11 @@ if (typeof window !== 'undefined') {
   function render() {
     const index = Number($('album').value);
     const album = albums[index];
+    if (!album) {
+      $('folder').hidden = true;
+      $('tracks').replaceChildren();
+      return;
+    }
     $('folder').hidden = !album.id;
     if (album.id) $('folder').href = `https://drive.google.com/drive/folders/${encodeURIComponent(album.id)}`;
     $('tracks').replaceChildren(...album.tracks.map((track, i) => {
@@ -85,7 +155,7 @@ if (typeof window !== 'undefined') {
   }
 
   $('album').onchange = render;
-  function switchSource(next, local) {
+  function refreshPlaylist() {
     generation++;
     current = undefined;
     audio.pause();
@@ -93,12 +163,22 @@ if (typeof window !== 'undefined') {
     audio.load();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = undefined;
-    albums = next;
-    $('online').hidden = !local;
+    const week = weeks.find(entry => entry.key === $('week').value);
+    const playlist = week ? weeklyAlbums(week.books, localSource) : null;
+    albums = playlist ? playlist.albums : (localSource || window.ENGLISH_CD);
+    $('mode').disabled = !!week;
+    $('mode').options[0].textContent = week ? '當週書單循環' : '全部專輯循環';
+    if (week) $('mode').value = 'all';
+    $('start').disabled = !albums.length;
+    $('album').disabled = !albums.length;
+    $('week-status').textContent = playlist
+      ? `${week.label} · ${albums.length} 本 · ${albums.reduce((sum, album) => sum + album.tracks.length, 0)} 軌${playlist.missing.length ? '。缺少對應音檔：' + playlist.missing.join('、') : ''}`
+      : '';
+    $('online').hidden = !localSource;
     $('file').hidden = true;
     $('now').textContent = '尚未播放';
     $('position').textContent = $('status').textContent = '';
-    $('source').textContent = local ? `已載入本機資料夾，共 ${albums.reduce((n, a) => n + a.tracks.length, 0)} 軌。` : '目前使用 Drive 線上音檔。若瀏覽器無法播放，請選擇本機資料夾。';
+    $('source').textContent = localSource ? `已載入本機資料夾，共 ${localSource.reduce((n, a) => n + a.tracks.length, 0)} 軌。` : '目前使用 Drive 線上音檔。若瀏覽器無法播放，請選擇本機資料夾。';
     populate();
   }
   $('local').onchange = event => {
@@ -107,10 +187,21 @@ if (typeof window !== 'undefined') {
     const local = localAlbums(files);
     event.target.value = '';
     if (!local.length) $('source').textContent = '這個資料夾沒有可加入的 MP3，請選擇解壓後的 English_CD 資料夾。';
-    else switchSource(local, true);
+    else {
+      localSource = local;
+      refreshPlaylist();
+    }
   };
-  $('online').onclick = () => switchSource(window.ENGLISH_CD, false);
-  $('start').onclick = () => { failed = 0; play({ album: Number($('album').value), track: 0 }); };
+  $('online').onclick = () => {
+    localSource = undefined;
+    refreshPlaylist();
+  };
+  $('start').onclick = () => {
+    if (!albums.length) return;
+    rememberWeek();
+    failed = 0;
+    play({ album: Number($('album').value), track: 0 });
+  };
   $('next').onclick = () => { failed = 0; advance(); };
   $('prev').onclick = () => {
     if (!current) return;
@@ -126,16 +217,31 @@ if (typeof window !== 'undefined') {
   audio.onended = () => advance();
   audio.onerror = () => {
     if (!current) return;
-    if (albums[current.album].id) {
-      $('status').textContent = 'Drive 無法在此頁播放。請從上方開啟 Drive 資料夾，下載並解壓後選擇本機資料夾。';
-      return;
-    }
     const limit = $('mode').value === 'album' ? albums[current.album].tracks.length : albums.reduce((n, a) => n + a.tracks.length, 0);
     if (++failed >= Math.min(limit, 5)) {
-      $('status').textContent = '連續無法讀取音軌，已停止。可在 Drive 開啟音軌，或選其他專輯重試。';
+      $('status').textContent = localSource
+        ? '連續無法讀取音軌，已停止。請重新選取本機資料夾，或選其他專輯重試。'
+        : 'Drive 音軌無法在此頁播放。請選擇已下載的本機 MP3 資料夾。';
       return;
     }
     advance('上一軌無法讀取，已嘗試跳到下一軌。');
   };
-  populate();
+  const weekSelect = $('week');
+  weekSelect.replaceChildren(...weeks.map(week => new Option(week.label, week.key)), new Option('全部專輯', ''));
+  let savedWeek;
+  try {
+    savedWeek = JSON.parse(localStorage.getItem('liao:lastWeek'));
+  } catch {}
+  const requestedWeek = new URLSearchParams(window.location.search).get('week');
+  weekSelect.value = [requestedWeek, savedWeek].find(key => weeks.some(week => week.key === key)) || weeks[0]?.key || '';
+  function rememberWeek() {
+    if (weekSelect.value) {
+      try { localStorage.setItem('liao:lastWeek', JSON.stringify(weekSelect.value)); } catch {}
+    }
+  }
+  weekSelect.onchange = () => {
+    rememberWeek();
+    refreshPlaylist();
+  };
+  refreshPlaylist();
 }
